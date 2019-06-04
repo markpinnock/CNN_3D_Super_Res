@@ -1,3 +1,4 @@
+from argparse import ArgumentParser
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -6,17 +7,34 @@ import scipy.interpolate as sciint
 import skimage.measure as sk
 
 
+parser = ArgumentParser()
+parser.add_argument('--expt_name', '-ex', help="Experiment name", type=str)
+parser.add_argument('--resolution', '-r', help="Resolution e.g. 512, 128", type=int, nargs='?', const=512, default=512)
+parser.add_argument('--volume', '-v', help="Volume number", type=int)
+arguments = parser.parse_args()
+
+if arguments.expt_name == None:
+    raise ValueError("Must provide experiment name")
+else:
+    expt_name = arguments.expt_name
+
+image_res = arguments.resolution
+
+if arguments.subject == None:
+    raise ValueError("Must provide volume number")
+else:
+    vol = arguments.minibatch_size
+
+
 random.seed(10)
 num_test = 16
-location = "test1HPC/"
-subject = 7
-vol_dims = [128, 128, 12]
+vol_dims = [image_res, image_res, 12]
 
 # hi_path = "G:/PhD/Super_Res_Data/Toshiba_Vols/NPY/Hi/"
 # lo_path = "G:/PhD/Super_Res_Data/Toshiba_Vols/NPY/Lo/"
 hi_path = "C:/Users/roybo/OneDrive - University College London/PhD/PhD Prog/NPY_Vols/Hi/"
 lo_path = "C:/Users/roybo/OneDrive - University College London/PhD/PhD Prog/NPY_Vols/Lo/"
-image_save_path = "C:/Users/roybo/OneDrive - University College London/PhD/PhD Prog/CNN_3D_Super_res/saved_images/" + location
+image_save_path = "C:/Users/roybo/OneDrive - University College London/PhD/PhD Prog/CNN_3D_Super_res/saved_images/" + expt_name
 
 hi_list = os.listdir(hi_path)
 lo_list = os.listdir(lo_path)
@@ -28,9 +46,9 @@ test_lo_list = lo_list[0:num_test]
 
 output_list = [img[-26:-5] + 'O.npy' for img in test_hi_list]
 
-hi_vol = np.load(hi_path + test_hi_list[subject])
-lo_vol = np.load(lo_path + test_lo_list[subject])
-out_vol = np.load(image_save_path + output_list[subject])
+hi_vol = np.load(hi_path + test_hi_list[vol])
+lo_vol = np.load(lo_path + test_lo_list[vol])
+out_vol = np.load(image_save_path + output_list[vol])
 print(np.min(hi_vol, axis=(0, 1, 2)), np.max(hi_vol, axis=(0, 1, 2)))
 print(np.min(lo_vol, axis=(0, 1, 2)), np.max(lo_vol, axis=(0, 1, 2)))
 print(np.min(out_vol, axis=(0, 1, 2)), np.max(out_vol, axis=(0, 1, 2)))
@@ -54,7 +72,7 @@ for idx in range(0, vol_dims[2]):
     int_SSIM = sk.compare_ssim(hi_vol[:, :, idx], int_vol[:, :, idx])
     
     fig, axs = plt.subplots(2, 3)
-    fig.suptitle('Axial: subject {}, slice {}'.format(subject, idx))
+    fig.suptitle('Axial: subject {}, slice {}'.format(vol, idx))
     axs[0, 0].imshow(hi_vol[:, :, idx].T, cmap='gray', origin='lower')
     axs[0, 0].set_title('Hi res')
     axs[0, 0].axis('off')
@@ -97,7 +115,7 @@ for idx in range(0, vol_dims[0], 16):
     int_SSIM = sk.compare_ssim(hi_vol[:, idx, :], int_vol[:, idx, :])
     
     fig, axs = plt.subplots(3, 2)
-    fig.suptitle('Coronal: subject {}, slice {}'.format(subject, idx))
+    fig.suptitle('Coronal: subject {}, slice {}'.format(vol, idx))
     axs[0, 0].imshow(hi_vol[100:400, idx, :].T, cmap='gray', origin='lower')
     axs[0, 0].set_title('Hi res')
     axs[0, 0].axis('off')
@@ -140,7 +158,7 @@ for idx in range(0, vol_dims[1], 16):
     int_SSIM = sk.compare_ssim(hi_vol[idx, :, :], int_vol[idx, :, :])
 
     fig, axs = plt.subplots(3, 2)
-    fig.suptitle('Saggital: subject {}, slice {}'.format(subject, idx))
+    fig.suptitle('Saggital: subject {}, slice {}'.format(vol, idx))
     axs[0, 0].imshow(hi_vol[idx, 100:400, :].T, cmap='gray', origin='lower')
     axs[0, 0].set_title('Hi res')
     axs[0, 0].axis('off')
