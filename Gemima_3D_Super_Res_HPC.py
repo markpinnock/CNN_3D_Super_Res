@@ -1,24 +1,45 @@
-import matplotlib.pyplot as plt
+from argparse import ArgumentParser
 import numpy as np
 import random
 import os
 import tensorflow as tf
-import time
 
 from Gemima_Utils import UNet, imgLoader, lossMSE
 
 
 hi_path = "/home/mpinnock/Hi/"
 lo_path = "/home/mpinnock/Lo/"
-
-model_name = 'test1HPC'
+# hi_path = "C:/Users/roybo/OneDrive - University College London/PhD/PhD Prog/NPY_Vols/Hi/" #TEST
+# lo_path = "C:/Users/roybo/OneDrive - University College London/PhD/PhD Prog/NPY_Vols/Lo/" #TEST
 model_save_path = "/home/mpinnock/"
 
-num_epoch = 50
-size_mb = 32
-num_test = 16
+parser = ArgumentParser()
+parser.add_argument('--expt_name', '-ex', help="Experiment name", type=str)
+parser.add_argument('--resolution', '-r', help="Resolution e.g. 512, 128", type=int, nargs='?', const=512, default=512)
+parser.add_argument('--minibatch_size', '-mb', help="Minibatch size", type=int)
+parser.add_argument('--epochs', '-ep', help="Number of epochs", type=int)
+arguments = parser.parse_args()
+
+if arguments.expt_name == None:
+    raise ValueError("Must provide experiment name")
+else:
+    expt_name = arguments.expt_name
+
+image_res = arguments.resolution
+
+if arguments.minibatch_size == None:
+    raise ValueError("Must provide minibatch size")
+else:
+    size_mb = arguments.minibatch_size
+
+if arguments.epochs == None:
+    raise ValueError("Must provide number of epochs")
+else:
+    num_epoch = arguments.epochs
+
+
 eta = 0.03
-vol_dims = [size_mb, 128, 128, 12, 1]
+vol_dims = [size_mb, image_res, image_res, 12, 1]
 np.set_printoptions(precision=2)
 random.seed(10)
 
@@ -32,23 +53,16 @@ assert len(hi_list) == len(lo_list), "Unequal numbers of high and low res"
 hi_list = list(map(lambda img: hi_path + img, hi_list))
 lo_list = list(map(lambda img: lo_path + img, lo_list))
 
-test_hi_list = hi_list[0:num_test]
-test_lo_list = lo_list[0:num_test]
-train_hi_list = hi_list[num_test:]
-train_lo_list = lo_list[num_test:]
-
-N = len(train_hi_list)
+N = len(hi_list)
 indices = list(range(0, N))
 
 ph_hi = tf.placeholder(tf.float32, vol_dims)
 ph_lo = tf.placeholder(tf.float32, vol_dims)
 
-GemNet = UNet(ph_lo)
-pred_images = GemNet.output
+SRNet = UNet(ph_lo)
+pred_images = SRNet.output
 loss = lossMSE(ph_hi, pred_images)
 train_op = tf.train.AdamOptimizer(learning_rate=eta).minimize(loss)
-
-start_time = time.time()
 
 with tf.Session() as sess:
 
@@ -58,18 +72,11 @@ with tf.Session() as sess:
         random.shuffle(indices)
 
         for iter in range(0, N - size_mb, size_mb):
-            hi_mb, lo_mb = imgLoader(train_hi_list, train_lo_list, indices[iter:iter+size_mb])
+            hi_mb, lo_mb = imgLoader(hi_list, lo_list, indices[iter:iter+size_mb])
             train_feed = {ph_hi: hi_mb, ph_lo: lo_mb}
             sess.run(train_op, feed_dict=train_feed)
 
         print('Epoch: {}, Training loss: {}'.format(ep, sess.run(loss, feed_dict=train_feed)))
 
     saver = tf.train.Saver()
-    saver.save(sess, os.path.join(model_save_path, model_name))
-
-    hi_mb, lo_mb = imgLoader(test_hi_list, test_lo_list, list(range(0, size_mb)))
-    test_feed = {ph_hi: hi_mb, ph_lo: lo_mb}
-    print('Test loss: {}'.format(sess.run(loss, feed_dict=test_feed)))
-    
-elapsed_time = time.time() - start_time
-print('Elapsed time: {}'.format(elapsed_time))
+    saver.save(sess, os.path.join(model_save_path, expt_name)) #TEST
