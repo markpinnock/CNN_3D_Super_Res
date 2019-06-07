@@ -11,7 +11,6 @@ hi_path = "/home/mpinnock/Hi/"
 lo_path = "/home/mpinnock/Lo/"
 # hi_path = "C:/Users/roybo/OneDrive - University College London/PhD/PhD Prog/NPY_Vols/Hi/" #TEST
 # lo_path = "C:/Users/roybo/OneDrive - University College London/PhD/PhD Prog/NPY_Vols/Lo/" #TEST
-model_save_path = "/home/mpinnock/"
 
 parser = ArgumentParser()
 parser.add_argument('--expt_name', '-ex', help="Experiment name", type=str)
@@ -37,6 +36,7 @@ if arguments.epochs == None:
 else:
     num_epoch = arguments.epochs
 
+model_save_path = "/home/mpinnock/" + expt_name + "/"
 
 eta = 0.03
 vol_dims = [size_mb, image_res, image_res, 12, 1]
