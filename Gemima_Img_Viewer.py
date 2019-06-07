@@ -2,10 +2,14 @@ from argparse import ArgumentParser
 import matplotlib.pyplot as plt
 import numpy as np
 import os
-import random
 import scipy.interpolate as sciint
 import skimage.measure as sk
 
+
+# hi_path = "G:/PhD/Super_Res_Data/Toshiba_Vols/NPY/Hi/"
+# lo_path = "G:/PhD/Super_Res_Data/Toshiba_Vols/NPY/Lo/"
+hi_path = "C:/Users/rmappin/OneDrive - University College London/PhD/PhD Prog/CNN_3D_Super_Res/test_data/Hi/"
+lo_path = "C:/Users/rmappin/OneDrive - University College London/PhD/PhD Prog/CNN_3D_Super_Res/test_data/Lo/"
 
 parser = ArgumentParser()
 parser.add_argument('--expt_name', '-ex', help="Experiment name", type=str)
@@ -20,34 +24,20 @@ else:
 
 image_res = arguments.resolution
 
-if arguments.subject == None:
+if arguments.volume == None:
     raise ValueError("Must provide volume number")
 else:
-    vol = arguments.minibatch_size
+    vol = arguments.volume
 
-
-random.seed(10)
-num_test = 16
 vol_dims = [image_res, image_res, 12]
-
-# hi_path = "G:/PhD/Super_Res_Data/Toshiba_Vols/NPY/Hi/"
-# lo_path = "G:/PhD/Super_Res_Data/Toshiba_Vols/NPY/Lo/"
-hi_path = "C:/Users/roybo/OneDrive - University College London/PhD/PhD Prog/NPY_Vols/Hi/"
-lo_path = "C:/Users/roybo/OneDrive - University College London/PhD/PhD Prog/NPY_Vols/Lo/"
-image_save_path = "C:/Users/roybo/OneDrive - University College London/PhD/PhD Prog/CNN_3D_Super_res/saved_images/" + expt_name
+image_save_path = "C:/Users/rmappin/OneDrive - University College London/PhD/PhD Prog/CNN_3D_Super_res/saved_images/" + expt_name + "/"
 
 hi_list = os.listdir(hi_path)
 lo_list = os.listdir(lo_path)
-temp_list = list(zip(hi_list, lo_list))
-random.shuffle(temp_list)
-hi_list, lo_list = zip(*temp_list)
-test_hi_list = hi_list[0:num_test]
-test_lo_list = lo_list[0:num_test]
+output_list = [img[-26:-5] + 'O.npy' for img in hi_list]
 
-output_list = [img[-26:-5] + 'O.npy' for img in test_hi_list]
-
-hi_vol = np.load(hi_path + test_hi_list[vol])
-lo_vol = np.load(lo_path + test_lo_list[vol])
+hi_vol = np.load(hi_path + hi_list[vol])
+lo_vol = np.load(lo_path + lo_list[vol])
 out_vol = np.load(image_save_path + output_list[vol])
 print(np.min(hi_vol, axis=(0, 1, 2)), np.max(hi_vol, axis=(0, 1, 2)))
 print(np.min(lo_vol, axis=(0, 1, 2)), np.max(lo_vol, axis=(0, 1, 2)))
@@ -97,10 +87,10 @@ for idx in range(0, vol_dims[2]):
     axs[1, 2].set_title('Difference')
     axs[1, 2].axis('off')
     
-    mng = plt.get_current_fig_manager()
-    mng.resize(*mng.window.maxsize())
-    # figManager = plt.get_current_fig_manager()
-    # figManager.window.showMaximized()
+    # mng = plt.get_current_fig_manager()
+    # mng.resize(*mng.window.maxsize())
+    figManager = plt.get_current_fig_manager()
+    figManager.window.showMaximized()
     plt.show()
 
 for idx in range(0, vol_dims[0], 16):
