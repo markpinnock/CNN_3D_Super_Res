@@ -12,11 +12,11 @@ def imgLoader(hi_list, lo_list, indices):
     return hi_img, lo_img
 
 
-def lossL1(batch_A, batch_B, size_mb):
+def lossL1(batch_A, batch_B):
     return tf.reduce_sum(tf.abs(batch_A - batch_B), axis=[0, 1, 2, 3])
 
 
-def lossL2(batch_A, batch_B, size_mb):
+def lossL2(batch_A, batch_B):
     return tf.reduce_sum(tf.square(batch_A - batch_B), axis=[0, 1, 2, 3])
 
 
