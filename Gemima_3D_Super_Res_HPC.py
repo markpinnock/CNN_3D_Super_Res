@@ -7,10 +7,10 @@ import tensorflow as tf
 from Gemima_Utils import UNet, imgLoader, lossL2
 
 
-# HI_PATH = "/home/mpinnock/Data/Hi/"
-# LO_PATH = "/home/mpinnock/Data/Lo/"
-HI_PATH = "C:/Users/roybo/OneDrive - University College London/PhD/PhD Prog/NPY_Vols/Hi/" #TEST
-LO_PATH = "C:/Users/roybo/OneDrive - University College London/PhD/PhD Prog/NPY_Vols/Lo/" #TEST
+HI_PATH = "/home/mpinnock/Data/Hi/"
+LO_PATH = "/home/mpinnock/Data/Lo/"
+# HI_PATH = "C:/Users/roybo/OneDrive - University College London/PhD/PhD Prog/NPY_Vols/Hi/"
+# LO_PATH = "C:/Users/roybo/OneDrive - University College London/PhD/PhD Prog/NPY_Vols/Lo/"
 
 parser = ArgumentParser()
 parser.add_argument('--expt_name', '-ex', help="Experiment name", type=str)
