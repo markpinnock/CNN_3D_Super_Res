@@ -12,12 +12,12 @@ def imgLoader(hi_list, lo_list, indices):
     return hi_img, lo_img
 
 
-def lossL2(batch_A, batch_B, size_mb):
-    return tf.reduce_sum(tf.square(batch_A - batch_B), axis=[0, 1, 2, 3]) / size_mb
-
-
 def lossL1(batch_A, batch_B, size_mb):
-    return tf.reduce_sum(tf.abs(batch_A - batch_B), axis=[0, 1, 2, 3]) / size_mb
+    return tf.reduce_sum(tf.abs(batch_A - batch_B), axis=[0, 1, 2, 3])
+
+
+def lossL2(batch_A, batch_B, size_mb):
+    return tf.reduce_sum(tf.square(batch_A - batch_B), axis=[0, 1, 2, 3])
 
 
 def convKernel(channels, name='W'):
