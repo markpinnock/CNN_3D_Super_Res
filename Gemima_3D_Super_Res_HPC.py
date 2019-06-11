@@ -7,10 +7,10 @@ import tensorflow as tf
 from Gemima_Utils import UNet, imgLoader, lossL2
 
 
-HI_PATH = "/home/mpinnock/Data/Hi/"
-LO_PATH = "/home/mpinnock/Data/Lo/"
-# HI_PATH = "C:/Users/roybo/OneDrive - University College London/PhD/PhD Prog/NPY_Vols/Hi/"
-# LO_PATH = "C:/Users/roybo/OneDrive - University College London/PhD/PhD Prog/NPY_Vols/Lo/"
+# HI_PATH = "/home/mpinnock/Data/Hi/"
+# LO_PATH = "/home/mpinnock/Data/Lo/"
+HI_PATH = "C:/Users/roybo/OneDrive - University College London/PhD/PhD Prog/NPY_Vols/Hi/"
+LO_PATH = "C:/Users/roybo/OneDrive - University College London/PhD/PhD Prog/NPY_Vols/Lo/"
 
 parser = ArgumentParser()
 parser.add_argument('--expt_name', '-ex', help="Experiment name", type=str)
@@ -66,14 +66,10 @@ indices = list(range(0, N))
 if num_folds == 0:
     hi_train = hi_list
     lo_train = lo_list
-    N_train = len(hi_train) - (len(hi_train) % size_mb)
+    N_train = len(hi_train)
 
 else:
     num_in_fold = int(N / num_folds)
-    # hi_val = hi_list[fold*num_in_fold:(fold+1)*num_in_fold]
-    # lo_val = hi_list[fold*num_in_fold:(fold+1)*num_in_fold]
-    # hi_train = list(set(hi_list) - set(hi_val))
-    # lo_train = list(set(lo_list) - set(lo_val))
     val_indices = indices[fold*num_in_fold:(fold+1)*num_in_fold]
     train_indices = list(set(indices) - set(val_indices))
     N_train = len(train_indices)
@@ -105,7 +101,7 @@ with tf.Session() as sess:
                 sess.run(train_op, feed_dict=train_feed)
                 train_loss = train_loss + sess.run(loss, feed_dict=train_feed)
 
-        print('Epoch {} training loss per image: {}'.format(ep, train_loss / N_train))
+        print('Epoch {} training loss per image: {}'.format(ep, train_loss / (N_train - (N_train % size_mb))))
     
     if num_folds == 0:
         saver = tf.train.Saver()
@@ -123,6 +119,7 @@ with tf.Session() as sess:
                 val_feed = {ph_hi: hi_mb, ph_lo: lo_mb}
                 sess.run(train_op, feed_dict=val_feed)
                 val_loss = val_loss + sess.run(loss, feed_dict=val_feed)
-            
+        print(N_train, N_train - (N_train % size_mb))
+        print(N_val, N_val - (N_val % size_mb))
         print('Summed validation loss for fold {}: {}'.format(fold, val_loss))
-        print('Validation loss per image: {}'.format(val_loss / N_val))
+        print('Validation loss per image: {}'.format(val_loss / (N_val - (N_val % size_mb))))
