@@ -1,3 +1,4 @@
+import math
 import numpy as np
 import os
 import tensorflow as tf
@@ -59,8 +60,9 @@ def convSkipLayer(layer_input, skip_input, channels, name='conv_skip_layer'):
 
 class UNet:
 
-    def __init__(self, image_batch):
-        self.nc = [2**n for n in range(3, 8)]
+    def __init__(self, image_batch, start_nc):
+        base2_pow_nc = int(math.log2(start_nc))
+        self.nc = [2**n for n in range(base2_pow_nc, base2_pow_nc + 5)]
       
         dn_pre_layer_0 = convLayer(name='dn_conv_layer_0', layer_input=image_batch, channels=[1, self.nc[0]])
         dn_layer_0 = maxPoolLayer(name='dn_max_pool_layer_0', layer_input=dn_pre_layer_0)
