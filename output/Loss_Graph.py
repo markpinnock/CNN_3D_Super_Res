@@ -14,7 +14,7 @@ if arguments.expt_number == None:
 else:
     expt_num = arguments.expt_number
 
-report_list = [file for file in file_list if expt_num in file]
+report_list = [file for file in file_list if expt_num in file and 'nc' in file]
 report_split = report_list[0].split('_')
 title_num = report_split[1]
 num_chan = report_split[2][2:]
