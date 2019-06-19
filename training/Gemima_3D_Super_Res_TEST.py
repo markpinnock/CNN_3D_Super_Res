@@ -19,7 +19,7 @@ lo_path = "C:/Users/roybo/OneDrive - University College London/PhD/PhD_Prog/NPY_
 model_save_path = "C:/Users/roybo/OneDrive - University College London/PhD/PhD_Prog/CNN_3D_Super_res/models/"
 
 num_epoch = 5
-size_mb = 2
+size_mb = 8
 num_test = 8
 eta = 0.03
 vol_dims = [size_mb, 128, 128, 12, 1]
@@ -66,8 +66,7 @@ with tf.Session() as sess:
 
         print('Epoch: {}, Training loss: {}'.format(ep, sess.run(loss / size_mb, feed_dict=train_feed)))
 
-    # saver = tf.train.Saver()
-    # saver.save(sess, os.path.join(model_save_path, model_name))
+    print('SAVED')
 
     hi_mb, lo_mb = imgLoader(test_hi_list, test_lo_list, list(range(0, size_mb)))
     test_feed = {ph_hi: hi_mb, ph_lo: lo_mb}

@@ -7,7 +7,7 @@ import tensorflow as tf
 
 sys.path.append('..')
 
-from Gemima_Utils import UNet, imgLoader, lossL2
+from utils.Gemima_Utils import UNet, imgLoader, lossL2
 
 
 HI_PATH = "/home/mpinnock/Data/Hi/"
@@ -47,8 +47,8 @@ else:
 num_folds = arguments.folds
 fold = arguments.crossval
 
-#if fold >= num_folds:
-#    raise ValueError("Fold number cannot be greater or equal to number of folds")
+if fold >= num_folds and num_folds != 0:
+   raise ValueError("Fold number cannot be greater or equal to number of folds")
 
 model_save_path = "/home/mpinnock/Models/" + expt_name + "/"
 
@@ -73,6 +73,7 @@ if num_folds == 0:
     hi_train = hi_list
     lo_train = lo_list
     N_train = len(hi_train)
+    train_indices = indices
 
 else:
     num_in_fold = int(N / num_folds)
