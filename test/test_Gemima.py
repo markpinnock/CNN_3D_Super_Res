@@ -92,3 +92,18 @@ def test_imgLoader_dims():
     # Check that tensor shapes are correct
     assert len(hi_img.shape) == TENSOR_DIMS
 
+
+def test_neg_imgLoader_dims():
+    hi_list, lo_list = listLoad()
+    indices = [0, 1, 2, 3, 4, 5, 6, 7]
+
+    test_hi_mb = [hi_list[i][-26:-4] for i in indices]
+    test_lo_mb = [lo_list[i][-26:-4] for i in indices]
+    
+    hi_img, lo_img = imgLoader(hi_list, lo_list, indices)
+    
+    # Check that minibatch tensor shapes are equal
+    assert hi_img.shape == lo_img.shape
+    # Check that tensor shapes are correct
+    assert len(hi_img.shape) == TENSOR_DIMS
+
