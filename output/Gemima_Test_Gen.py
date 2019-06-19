@@ -1,9 +1,12 @@
 from argparse import ArgumentParser
 import numpy as np
 import os
+import sys
 import tensorflow as tf
 
-from Gemima_Utils import UNet, imgLoader, lossMSE
+sys.path.append('..')
+
+from utils.Gemima_Utils import UNet, imgLoader, lossL2
 
 
 # hi_path = "F:/PhD/Super_Res_Data/Toshiba_Vols/NPY/Hi/"
@@ -15,7 +18,7 @@ parser = ArgumentParser()
 parser.add_argument('--expt_name', '-ex', help="Experiment name", type=str)
 parser.add_argument('--resolution', '-r', help="Resolution e.g. 512, 128", type=int, nargs='?', const=512, default=512)
 parser.add_argument('--minibatch_size', '-mb', help="Minibatch size", type=int)
-parser.add_argument('--num_test', '-n', help="Number to test", type=int)
+parser.add_argument('--num_chans', '-nc', help="Starting number of channels", type=int, nargs='?', const=8, default=8)
 arguments = parser.parse_args()
 
 if arguments.expt_name == None:
@@ -30,6 +33,8 @@ if arguments.minibatch_size == None:
 else:
     size_mb = arguments.minibatch_size
 
+start_nc = arguments.num_chans
+
 model_save_path = "C:/Users/roybo/OneDrive - University College London/PhD/PhD_Prog/CNN_3D_Super_res/models/" + expt_name + "/"
 image_save_path = "C:/Users/roybo/OneDrive - University College London/PhD/PhD_Prog/CNN_3D_Super_res/saved_images/" + expt_name + "/"
 
@@ -40,21 +45,17 @@ lo_list = os.listdir(lo_path)
 hi_list = list(map(lambda img: hi_path + img, hi_list))
 lo_list = list(map(lambda img: lo_path + img, lo_list))
 assert len(hi_list) == len(lo_list), "Unequal numbers of high and low res"
-
-if arguments.num_test == None:
-    N = len(hi_list)
-else:
-    N = arguments.num_test
+N = len(hi_list)
 
 indices = list(range(0, N))
 
 ph_hi = tf.placeholder(tf.float32, vol_dims)
 ph_lo = tf.placeholder(tf.float32, vol_dims)
 
-SRNet = UNet(ph_lo)
+SRNet = UNet(ph_lo, start_nc)
 pred_images = SRNet.output
 
-loss = lossMSE(ph_hi, pred_images)
+loss = lossL2(ph_hi, pred_images)
 
 with tf.Session() as sess:
     saver = tf.train.Saver()
