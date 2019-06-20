@@ -11,8 +11,8 @@ sys.path.append('/home/mpinnock/CNN_3D_Super_Res/scripts')
 from utils.Gemima_Utils import UNet, imgLoader, lossL2
 
 
-# FILE_PATH = "/home/mpinnock/Data/"
-FILE_PATH = "C:/Users/roybo/OneDrive - University College London/PhD/PhD_Prog/NPY_Vols/"
+FILE_PATH = "/home/mpinnock/Data/"
+# FILE_PATH = "C:/Users/roybo/OneDrive - University College London/PhD/PhD_Prog/NPY_Vols/"
 
 parser = ArgumentParser()
 parser.add_argument('--expt_name', '-ex', help="Experiment name", type=str)
@@ -59,6 +59,8 @@ random.seed(10)
 os.chdir(FILE_PATH)
 hi_list = os.listdir('Hi/')
 lo_list = os.listdir('Lo/')
+hi_list.sort()
+lo_list.sort()
 temp_list = list(zip(hi_list, lo_list))
 random.shuffle(temp_list)
 hi_list, lo_list = zip(*temp_list)
