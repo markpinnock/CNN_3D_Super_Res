@@ -14,8 +14,7 @@ from utils.Gemima_Utils import UNet, imgLoader, lossL2
 # lo_path = "G:/PhD/Super_Res_Data/Toshiba_Vols/NPY/Lo/"
 
 model_name = 'test4fullres'
-hi_path = "C:/Users/roybo/OneDrive - University College London/PhD/PhD_Prog/NPY_Vols/Hi/"
-lo_path = "C:/Users/roybo/OneDrive - University College London/PhD/PhD_Prog/NPY_Vols/Lo/"
+file_path = "C:/Users/roybo/OneDrive - University College London/PhD/PhD_Prog/NPY_Vols/"
 model_save_path = "C:/Users/roybo/OneDrive - University College London/PhD/PhD_Prog/CNN_3D_Super_res/models/"
 
 num_epoch = 5
@@ -26,15 +25,13 @@ vol_dims = [size_mb, 128, 128, 12, 1]
 np.set_printoptions(precision=2)
 random.seed(10)
 
-hi_list = os.listdir(hi_path)
-lo_list = os.listdir(lo_path)
+os.chdir(file_path)
+hi_list = os.listdir('Hi/')
+lo_list = os.listdir('Lo/')
 temp_list = list(zip(hi_list, lo_list))
 random.shuffle(temp_list)
 hi_list, lo_list = zip(*temp_list)
 assert len(hi_list) == len(lo_list), "Unequal numbers of high and low res"
-
-hi_list = list(map(lambda img: hi_path + img, hi_list))
-lo_list = list(map(lambda img: lo_path + img, lo_list))
 
 test_hi_list = hi_list[0:num_test]
 test_lo_list = lo_list[0:num_test]

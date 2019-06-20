@@ -6,14 +6,13 @@ import sys
 import tensorflow as tf
 
 sys.path.append('..')
+sys.path.append('/home/mpinnock/CNN_3D_Super_Res/scripts')
 
 from utils.Gemima_Utils import UNet, imgLoader, lossL2
 
 
-HI_PATH = "/home/mpinnock/Data/Hi/"
-LO_PATH = "/home/mpinnock/Data/Lo/"
-# HI_PATH = "C:/Users/roybo/OneDrive - University College London/PhD/PhD_Prog/NPY_Vols/Hi/"
-# LO_PATH = "C:/Users/roybo/OneDrive - University College London/PhD/PhD_Prog/NPY_Vols/Lo/"
+# FILE_PATH = "/home/mpinnock/Data/"
+FILE_PATH = "C:/Users/roybo/OneDrive - University College London/PhD/PhD_Prog/NPY_Vols/"
 
 parser = ArgumentParser()
 parser.add_argument('--expt_name', '-ex', help="Experiment name", type=str)
@@ -50,22 +49,21 @@ fold = arguments.crossval
 if fold >= num_folds and num_folds != 0:
    raise ValueError("Fold number cannot be greater or equal to number of folds")
 
-model_save_path = "/home/mpinnock/Models/" + expt_name + "/"
+MODEL_SAVE_PATH = "/home/mpinnock/Models/" + expt_name + "/"
 
 ETA = 0.03
 vol_dims = [size_mb, image_res, image_res, 12, 1]
 np.set_printoptions(precision=2)
 random.seed(10)
 
-hi_list = os.listdir(HI_PATH)
-lo_list = os.listdir(LO_PATH)
+os.chdir(FILE_PATH)
+hi_list = os.listdir('Hi/')
+lo_list = os.listdir('Lo/')
 temp_list = list(zip(hi_list, lo_list))
 random.shuffle(temp_list)
 hi_list, lo_list = zip(*temp_list)
 assert len(hi_list) == len(lo_list), "Unequal numbers of high and low res"
 
-hi_list = list(map(lambda img: HI_PATH + img, hi_list))
-lo_list = list(map(lambda img: LO_PATH + img, lo_list))
 N = len(hi_list)
 indices = list(range(0, N))
 
@@ -113,7 +111,7 @@ with tf.Session() as sess:
     
     if num_folds == 0:
         saver = tf.train.Saver()
-        saver.save(sess, os.path.join(model_save_path, expt_name))
+        saver.save(sess, os.path.join(MODEL_SAVE_PATH, expt_name))
     
     else:
         val_loss = 0

@@ -10,15 +10,10 @@ from utils.Gemima_Utils import imgLoader
 def listLoad():
     # Test file format: UCLH_01493856_1_0001_L
 
-    TEST_PATH = "C:/Users/roybo/OneDrive - University College London/PhD/PhD_Prog/CNN_3D_Super_Res/scripts/test/"
-    HI_PATH = TEST_PATH + "test_vols/Hi/"
-    LO_PATH = TEST_PATH + "test_vols/Lo/"
-
-    hi_list = os.listdir(HI_PATH)
-    lo_list = os.listdir(LO_PATH)
-
-    hi_list = list(map(lambda img: HI_PATH + img, hi_list))
-    lo_list = list(map(lambda img: LO_PATH + img, lo_list))
+    FILE_PATH = "C:/Users/roybo/OneDrive - University College London/PhD/PhD_Prog/CNN_3D_Super_Res/scripts/test/test_vols/"
+    os.chdir(FILE_PATH)
+    hi_list = os.listdir('Hi/')
+    lo_list = os.listdir('Lo/')
 
     return hi_list, lo_list
 
