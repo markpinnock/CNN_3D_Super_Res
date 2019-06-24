@@ -11,8 +11,7 @@ from utils.Gemima_Utils import UNet, imgLoader, lossL2
 
 # hi_path = "F:/PhD/Super_Res_Data/Toshiba_Vols/NPY/Hi/"
 # lo_path = "F:/PhD/Super_Res_Data/Toshiba_Vols/NPY/Lo/"
-hi_path = "C:/Users/roybo/OneDrive - University College London/PhD/PhD_Prog/CNN_3D_Super_Res/test_data/Hi/"
-lo_path = "C:/Users/roybo/OneDrive - University College London/PhD/PhD_Prog/CNN_3D_Super_Res/test_data/Lo/"
+FILE_PATH = "C:/Users/roybo/OneDrive - University College London/PhD/PhD_Prog/CNN_3D_Super_Res/test_data/"
 
 parser = ArgumentParser()
 parser.add_argument('--expt_name', '-ex', help="Experiment name", type=str)
@@ -35,15 +34,13 @@ else:
 
 start_nc = arguments.num_chans
 
-model_save_path = "C:/Users/roybo/OneDrive - University College London/PhD/PhD_Prog/CNN_3D_Super_res/models/" + expt_name + "/"
-image_save_path = "C:/Users/roybo/OneDrive - University College London/PhD/PhD_Prog/CNN_3D_Super_res/saved_images/" + expt_name + "/"
+MODEL_SAVE_PATH = "C:/Users/roybo/OneDrive - University College London/PhD/PhD_Prog/CNN_3D_Super_res/models/" + expt_name + "/"
+IMAGE_SAVE_PATH = "C:/Users/roybo/OneDrive - University College London/PhD/PhD_Prog/CNN_3D_Super_res/saved_images/" + expt_name + "/"
 
 vol_dims = [size_mb, image_res, image_res, 12, 1]
 
-hi_list = os.listdir(hi_path)
-lo_list = os.listdir(lo_path)
-hi_list = list(map(lambda img: hi_path + img, hi_list))
-lo_list = list(map(lambda img: lo_path + img, lo_list))
+hi_list = os.listdir(FILE_PATH + 'Hi/')
+lo_list = os.listdir(FILE_PATH + 'Lo/')
 assert len(hi_list) == len(lo_list), "Unequal numbers of high and low res"
 N = len(hi_list)
 
@@ -59,7 +56,7 @@ loss = lossL2(ph_hi, pred_images)
 
 with tf.Session() as sess:
     saver = tf.train.Saver()
-    saver.restore(sess, model_save_path + expt_name)
+    saver.restore(sess, MODEL_SAVE_PATH + expt_name)
 
     for iter in range(0, N, size_mb):
         hi_mb, lo_mb = imgLoader(hi_list, lo_list, indices[iter:iter+size_mb])
@@ -68,4 +65,4 @@ with tf.Session() as sess:
         print("Test loss: {}".format(sess.run(loss, feed_dict=test_feed)))
 
         for idx in range(0, size_mb):
-            np.save(image_save_path + hi_list[iter+idx][-26:-5] + 'O', output[idx, :, :, :, 0])
+            np.save(IMAGE_SAVE_PATH + hi_list[iter+idx][-26:-5] + 'O', output[idx, :, :, :, 0])
