@@ -8,7 +8,9 @@ import tensorflow as tf
 sys.path.append('..')
 sys.path.append('/home/mpinnock/CNN_3D_Super_Res/scripts')
 
-from utils.Gemima_Utils import UNet, imgLoader, lossL2
+from utils.networks import UNet
+from utils.functions import imgLoader
+from utils.losses import lossL2
 
 
 FILE_PATH = "/home/mpinnock/Data/"
@@ -49,7 +51,7 @@ fold = arguments.crossval
 if fold >= num_folds and num_folds != 0:
    raise ValueError("Fold number cannot be greater or equal to number of folds")
 
-MODEL_SAVE_PATH = "/home/mpinnock/Models/" + expt_name + "/"
+MODEL_SAVE_PATH = "/home/mpinnock/models/" + expt_name + "/"
 
 ETA = 0.03
 vol_dims = [size_mb, image_res, image_res, 12, 1]

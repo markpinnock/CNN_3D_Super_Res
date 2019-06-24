@@ -7,7 +7,9 @@ import tensorflow as tf
 
 sys.path.append('..')
 
-from utils.Gemima_Utils import UNet, imgLoader, lossL2
+from utils.networks import UNet
+from utils.functions import imgLoader
+from utils.losses import lossL2
 
 
 # hi_path = "G:/PhD/Super_Res_Data/Toshiba_Vols/NPY/Hi/"

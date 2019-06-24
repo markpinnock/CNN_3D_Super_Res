@@ -6,7 +6,7 @@ import sys
 
 sys.path.append('..')
 
-from utils.Gemima_Utils import diceIndexCalc
+from utils.functions import diceIndexCalc
 
 
 # FILE_PATH = "F:/PhD/Super_Res_Data/Toshiba_Vols/NII_Test/UCLH_11700946/"
