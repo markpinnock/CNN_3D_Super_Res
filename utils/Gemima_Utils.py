@@ -5,6 +5,12 @@ import sys
 import tensorflow as tf
 
 
+def diceIndexCalc(vol_A, vol_B):
+    numer = 2 * np.sum((vol_A * vol_B), axis=(1, 2, 3))
+    denom = np.sum(vol_A, axis=(1, 2, 3)) + np.sum(vol_B, axis=(1, 2, 3)) + 1e-6
+    return numer / denom
+
+
 def imgLoader(hi_list, lo_list, indices):
     TENSOR_DIMS = 5
 
