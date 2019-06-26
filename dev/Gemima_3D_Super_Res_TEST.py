@@ -4,12 +4,13 @@ import random
 import os
 import sys
 import tensorflow as tf
+import time
 
 sys.path.append('..')
 
 from utils.networks import UNet
 from utils.functions import imgLoader
-from utils.losses import lossL2
+from utils.losses import lossL2, regFFT, regLaplace
 
 
 # hi_path = "G:/PhD/Super_Res_Data/Toshiba_Vols/NPY/Hi/"
@@ -19,7 +20,7 @@ model_name = 'test4fullres'
 file_path = "C:/Users/roybo/OneDrive - University College London/PhD/PhD_Prog/NPY_Vols/"
 model_save_path = "C:/Users/roybo/OneDrive - University College London/PhD/PhD_Prog/CNN_3D_Super_res/models/"
 
-num_epoch = 5
+num_epoch = 10
 size_mb = 8
 num_test = 8
 eta = 0.03
@@ -50,8 +51,12 @@ ph_lo = tf.placeholder(tf.float32, vol_dims)
 
 SRNet = UNet(ph_lo, 2)
 pred_images = SRNet.output
-loss = lossL2(ph_hi, pred_images)
+L2 = lossL2(ph_hi, pred_images)
+reg = regLaplace(ph_hi, pred_images)
+loss = L2 + 0 * reg
 train_op = tf.train.AdamOptimizer(learning_rate=eta).minimize(loss)
+
+start_time = time.time()
 
 with tf.Session() as sess:
 
@@ -65,13 +70,13 @@ with tf.Session() as sess:
             train_feed = {ph_hi: hi_mb, ph_lo: lo_mb}
             sess.run(train_op, feed_dict=train_feed)
 
-        print('Epoch: {}, Training loss: {}'.format(ep, sess.run(loss / size_mb, feed_dict=train_feed)))
+        print('Epoch: {}, Training loss: {}, {}'.format(ep, sess.run(L2 / size_mb, feed_dict=train_feed), sess.run(reg, feed_dict=train_feed)))
 
     print('SAVED')
 
     hi_mb, lo_mb = imgLoader(test_hi_list, test_lo_list, list(range(0, size_mb)))
     test_feed = {ph_hi: hi_mb, ph_lo: lo_mb}
-    print('Test loss: {}'.format(sess.run(loss / size_mb, feed_dict=test_feed)))
+    print('Test loss: {}'.format(sess.run(L2 / size_mb, feed_dict=test_feed)))
     
-
+print("Total time: {}".format(time.time() - start_time))
 
