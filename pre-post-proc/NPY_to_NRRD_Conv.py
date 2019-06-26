@@ -2,12 +2,13 @@ import nrrd
 import numpy as np
 import os
 import scipy.interpolate as sciint
+import scipy.ndimage as scind
 
 
-FILE_PATH = "C:/Users/roybo/OneDrive - University College London/PhD/PhD_Prog/CNN_3D_Super_Res/test_data/"
-OUT_PATH = "C:/Users/roybo/OneDrive - University College London/PhD/PhD_Prog/CNN_3D_Super_Res/saved_images/007_nc8_ep10_n1026/"
-SAVE_PATH = "C:/Users/roybo/OneDrive - University College London/PhD/PhD_Prog/CNN_3D_Super_Res/test_data/"
-# SAVE_PATH = "F:/PhD/Super_Res_Data/Toshiba_Vols/NII_Test/"
+FILE_PATH = "C:/Users/rmappin/OneDrive - University College London/PhD/PhD_Prog/CNN_3D_Super_Res/test_data/"
+FILE_PATH = "F:/PhD/Super_Res_Data/Toshiba_Vols/NII_Test/"
+OUT_PATH = "C:/Users/rmappin/OneDrive - University College London/PhD/PhD_Prog/CNN_3D_Super_Res/saved_images/007_nc8_ep10_n1026/"
+# SAVE_PATH = "C:/Users/rmappin/OneDrive - University College London/PhD/PhD_Prog/CNN_3D_Super_Res/test_data/"
 
 hi_list = os.listdir(FILE_PATH + 'Hi/')
 hi_list.sort()
@@ -17,6 +18,7 @@ out_list = os.listdir(OUT_PATH)
 out_list.sort()
 
 subject = 'UCLH_11700946'
+SAVE_PATH = "F:/PhD/Super_Res_Data/Toshiba_Vols/NII_Test/" + subject
 vol = 9
 vol_dims = [512, 512, 12]
 
@@ -31,25 +33,27 @@ samp_grid = np.array(np.meshgrid(np.arange(vol_dims[0]), np.arange(vol_dims[1]),
 samp_grid = np.moveaxis(samp_grid, 0, -1)
 
 
-# for i in range(vol):
-#     hi_vol = np.load(FILE_PATH + 'Hi/' + hi_list[i])
-#     lo_vol = np.load(FILE_PATH + 'Lo/' + lo_list[i])
-#     out_vol = np.load(OUT_PATH + out_list[i])
+for i in range(vol):
+    hi_vol = np.load(FILE_PATH + 'Hi/' + hi_list[i])
+    lo_vol = np.load(FILE_PATH + 'Lo/' + lo_list[i])
+    out_vol = np.load(OUT_PATH + out_list[i])
 
-#     interpFunc = sciint.interpolate.RegularGridInterpolator((np.arange(vol_dims[0]), np.arange(vol_dims[1]),
-#                                                           np.linspace(0, vol_dims[2], 3)), lo_vol[:, :, 2::4])
-#     int_vol = interpFunc(samp_grid, method='linear')
-#     int_vol = np.swapaxes(int_vol, 0, 1)
+    int_vol = scind.gaussian_filter(lo_vol, sigma=1)
 
-#     int_1[:, :, (i * 12):((i + 1) * 12)] = int_vol
-#     hi_1[:, :, (i * 12):((i + 1) * 12)] = hi_vol
-#     out_1[:, :, (i * 12):((i + 1) * 12)] = out_vol
-#     print("{}, {}, {}".format(hi_list[i], lo_list[i], out_list[i]))
+    interpFunc = sciint.interpolate.RegularGridInterpolator((np.arange(vol_dims[0]), np.arange(vol_dims[1]),
+                                                          np.linspace(0, vol_dims[2], 3)), int_vol[:, :, 2::4])
+    int_vol = interpFunc(samp_grid, method='linear')
+    int_vol = np.swapaxes(int_vol, 0, 1)
 
-# nrrd.write(os.path.join(SAVE_PATH, subject + '_1_1_H.nrrd'), hi_1)
-# nrrd.write(os.path.join(SAVE_PATH, subject + '_1_1_I.nrrd'), int_1)
-# nrrd.write(os.path.join(SAVE_PATH, subject + '_1_1_O.nrrd'), out_1)
-# print("SAVED")
+    int_1[:, :, (i * 12):((i + 1) * 12)] = int_vol
+    hi_1[:, :, (i * 12):((i + 1) * 12)] = hi_vol
+    out_1[:, :, (i * 12):((i + 1) * 12)] = out_vol
+    print("{}, {}, {}".format(hi_list[i], lo_list[i], out_list[i]))
+
+nrrd.write(os.path.join(SAVE_PATH, subject + '_1_1_H.nrrd'), hi_1)
+nrrd.write(os.path.join(SAVE_PATH, subject + '_1_1_I.nrrd'), int_1)
+nrrd.write(os.path.join(SAVE_PATH, subject + '_1_1_O.nrrd'), out_1)
+print("SAVED")
 
 for i in range(len(hi_list) - vol):
     hi_vol = np.load(FILE_PATH + 'Hi/' + hi_list[i + vol])
