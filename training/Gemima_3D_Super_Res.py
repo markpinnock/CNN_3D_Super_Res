@@ -4,6 +4,7 @@ import random
 import os
 import sys
 import tensorflow as tf
+import time
 
 sys.path.append('..')
 sys.path.append('/home/mpinnock/CNN_3D_Super_Res/scripts')
@@ -55,6 +56,8 @@ if fold >= num_folds and num_folds != 0:
 gpu_number = arguments.gpu
 
 MODEL_SAVE_PATH = "/home/mpinnock/models/" + expt_name + "/"
+# LOG_SAVE_NAME = "/home/mpinnock/reports/SR_" + expt_name
+LOG_SAVE_NAME = "C:/Users/roybo/SR_" + expt_name
 
 ETA = 0.03
 vol_dims = [size_mb, image_res, image_res, 12, 1]
@@ -95,6 +98,9 @@ with tf.device('/device:GPU:{}'.format(gpu_number)):
     loss = lossL2(ph_hi, pred_images)
     train_op = tf.train.AdamOptimizer(learning_rate=ETA).minimize(loss)
 
+log_file = open(LOG_SAVE_NAME, 'w')
+start_time = time.time()
+
 with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
 
     sess.run(tf.global_variables_initializer())
@@ -114,6 +120,7 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
                 train_loss = train_loss + sess.run(loss, feed_dict=train_feed)
 
         print('Epoch {} training loss per image: {}'.format(ep, train_loss / (N_train - (N_train % size_mb))))
+        log_file.write('Epoch {} training loss per image: {}\n'.format(ep, train_loss / (N_train - (N_train % size_mb))))
     
     if num_folds == 0:
         pass
@@ -134,4 +141,11 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
                 val_loss = val_loss + sess.run(loss, feed_dict=val_feed)
 
         print('Summed validation loss for fold {}: {}'.format(fold, val_loss))
+        log_file.write('Summed validation loss for fold {}: {}\n'.format(fold, val_loss))
         print('Validation loss per image: {}'.format(val_loss / (N_val - (N_val % size_mb))))
+        log_file.write('Validation loss per image: {}\n'.format(val_loss / (N_val - (N_val % size_mb))))
+        
+    print("Total time: {:.2f} min".format(time.time() - start_time))
+    log_file.write("Total time: {:.2f} min\n".format(time.time() - start_time))
+
+log_file.close()
