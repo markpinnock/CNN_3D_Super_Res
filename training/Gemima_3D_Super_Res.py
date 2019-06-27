@@ -13,8 +13,8 @@ from utils.functions import imgLoader
 from utils.losses import lossL2
 
 
-FILE_PATH = "/home/mpinnock/Data/"
-# FILE_PATH = "C:/Users/roybo/OneDrive - University College London/PhD/PhD_Prog/NPY_Vols/"
+# FILE_PATH = "/home/mpinnock/Data/"
+FILE_PATH = "C:/Users/roybo/OneDrive - University College London/PhD/PhD_Prog/NPY_Vols/"
 
 parser = ArgumentParser()
 parser.add_argument('--expt_name', '-ex', help="Experiment name", type=str)
@@ -24,6 +24,7 @@ parser.add_argument('--num_chans', '-nc', help="Starting number of channels", ty
 parser.add_argument('--epochs', '-ep', help="Number of epochs", type=int)
 parser.add_argument('--folds', '-f', help="Number of cross-validation folds", type=int, nargs='?', const=0, default=0)
 parser.add_argument('--crossval', '-c', help="Fold number", type=int, nargs='?', const=0, default=0)
+parser.add_argument('--gpu', '-g', help="GPU number", type=int, nargs='?', const=0, default=0)
 arguments = parser.parse_args()
 
 if arguments.expt_name == None:
@@ -50,6 +51,8 @@ fold = arguments.crossval
 
 if fold >= num_folds and num_folds != 0:
    raise ValueError("Fold number cannot be greater or equal to number of folds")
+
+gpu_number = arguments.gpu
 
 MODEL_SAVE_PATH = "/home/mpinnock/models/" + expt_name + "/"
 
@@ -84,16 +87,15 @@ else:
     N_train = len(train_indices)
     N_val = len(val_indices)
 
-ph_hi = tf.placeholder(tf.float32, vol_dims)
-ph_lo = tf.placeholder(tf.float32, vol_dims)
+with tf.device('/device:GPU:{}'.format(gpu_number)):
+    ph_hi = tf.placeholder(tf.float32, vol_dims)
+    ph_lo = tf.placeholder(tf.float32, vol_dims)
+    SRNet = UNet(ph_lo, start_nc)
+    pred_images = SRNet.output
+    loss = lossL2(ph_hi, pred_images)
+    train_op = tf.train.AdamOptimizer(learning_rate=ETA).minimize(loss)
 
-SRNet = UNet(ph_lo, start_nc)
-print(SRNet.nc) # TEST
-pred_images = SRNet.output
-loss = lossL2(ph_hi, pred_images)
-train_op = tf.train.AdamOptimizer(learning_rate=ETA).minimize(loss)
-
-with tf.Session() as sess:
+with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
 
     sess.run(tf.global_variables_initializer())
 
@@ -114,8 +116,9 @@ with tf.Session() as sess:
         print('Epoch {} training loss per image: {}'.format(ep, train_loss / (N_train - (N_train % size_mb))))
     
     if num_folds == 0:
-        saver = tf.train.Saver()
-        saver.save(sess, os.path.join(MODEL_SAVE_PATH, expt_name))
+        pass
+        # saver = tf.train.Saver()
+        # saver.save(sess, os.path.join(MODEL_SAVE_PATH, expt_name))
     
     else:
         val_loss = 0
