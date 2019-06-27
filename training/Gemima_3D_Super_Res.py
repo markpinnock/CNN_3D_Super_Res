@@ -12,10 +12,11 @@ sys.path.append('/home/mpinnock/CNN_3D_Super_Res/scripts')
 from utils.networks import UNet
 from utils.functions import imgLoader
 from utils.losses import lossL2
+from utils.losses import regFFT, regLaplace
 
 
-# FILE_PATH = "/home/mpinnock/Data/"
-FILE_PATH = "C:/Users/roybo/OneDrive - University College London/PhD/PhD_Prog/NPY_Vols/"
+FILE_PATH = "/home/mpinnock/Data/"
+# FILE_PATH = "C:/Users/roybo/OneDrive - University College London/PhD/PhD_Prog/NPY_Vols/"
 
 parser = ArgumentParser()
 parser.add_argument('--expt_name', '-ex', help="Experiment name", type=str)
@@ -26,6 +27,7 @@ parser.add_argument('--epochs', '-ep', help="Number of epochs", type=int)
 parser.add_argument('--folds', '-f', help="Number of cross-validation folds", type=int, nargs='?', const=0, default=0)
 parser.add_argument('--crossval', '-c', help="Fold number", type=int, nargs='?', const=0, default=0)
 parser.add_argument('--gpu', '-g', help="GPU number", type=int, nargs='?', const=0, default=0)
+parser.add_argument('--lamb', '-l', help="Regularisation hyperparameter", type=float, nargs='?', const=0.0, default=0.0)
 arguments = parser.parse_args()
 
 if arguments.expt_name == None:
@@ -54,10 +56,11 @@ if fold >= num_folds and num_folds != 0:
    raise ValueError("Fold number cannot be greater or equal to number of folds")
 
 gpu_number = arguments.gpu
+LAMBDA = arguments.lamb
 
 MODEL_SAVE_PATH = "/home/mpinnock/models/" + expt_name + "/"
-# LOG_SAVE_NAME = "/home/mpinnock/reports/SR_" + expt_name
-LOG_SAVE_NAME = "C:/Users/roybo/SR_" + expt_name
+LOG_SAVE_NAME = "/home/mpinnock/reports/SR_" + expt_name
+# LOG_SAVE_NAME = "C:/Users/roybo/SR_" + expt_name
 
 ETA = 0.03
 vol_dims = [size_mb, image_res, image_res, 12, 1]
@@ -95,7 +98,9 @@ with tf.device('/device:GPU:{}'.format(gpu_number)):
     ph_lo = tf.placeholder(tf.float32, vol_dims)
     SRNet = UNet(ph_lo, start_nc)
     pred_images = SRNet.output
-    loss = lossL2(ph_hi, pred_images)
+    L2 = lossL2(ph_hi, pred_images)
+    reg_term = regLaplace(ph_hi, pred_images)
+    loss = L2 + (LAMBDA * reg_term)
     train_op = tf.train.AdamOptimizer(learning_rate=ETA).minimize(loss)
 
 log_file = open(LOG_SAVE_NAME, 'w')
@@ -107,7 +112,8 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
 
     for ep in range(num_epoch):
         random.shuffle(train_indices)
-        train_loss = 0
+        train_L2 = 0
+        train_reg = 0
 
         for iter in range(0, N_train, size_mb):
             if any(idx >= N_train for idx in list(range(iter, iter+size_mb))):
@@ -117,15 +123,27 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
                 hi_mb, lo_mb = imgLoader(hi_list, lo_list, train_indices[iter:iter+size_mb])
                 train_feed = {ph_hi: hi_mb, ph_lo: lo_mb}
                 sess.run(train_op, feed_dict=train_feed)
-                train_loss = train_loss + sess.run(loss, feed_dict=train_feed)
+                train_L2 = train_L2 + sess.run(L2, feed_dict=train_feed)
 
-        print('Epoch {} training loss per image: {}'.format(ep, train_loss / (N_train - (N_train % size_mb))))
-        log_file.write('Epoch {} training loss per image: {}\n'.format(ep, train_loss / (N_train - (N_train % size_mb))))
-    
+                if LAMBDA != 0:
+                    train_reg = train_reg + sess.run(reg_term, feed_dict=train_feed)
+
+        print('Epoch {} training loss per image: {}'.format(ep, train_L2 / (N_train - (N_train % size_mb))))
+        log_file.write('Epoch {} training loss per image: {}'.format(ep, train_L2 / (N_train - (N_train % size_mb))))
+        
+        if LAMBDA != 0:
+            print('Epoch {} reg val per image: {:.2f}'.format(ep, train_reg / (N_train - (N_train % size_mb))))
+            log_file.write(', reg val per image: {:.2f}'.format(train_reg / (N_train - (N_train % size_mb))))
+            print('Epoch {} regularised loss per image {:.2f}'.format(ep, (np.float(train_L2) + (LAMBDA * train_reg)) / (N_train - (N_train % size_mb))))
+            log_file.write(', reg loss per image {:.2f}\n'.format((np.float(train_L2) + (LAMBDA * train_reg)) / (N_train - (N_train % size_mb))))
+                
+        else:
+            print('\n')
+
     if num_folds == 0:
-        pass
-        # saver = tf.train.Saver()
-        # saver.save(sess, os.path.join(MODEL_SAVE_PATH, expt_name))
+        # pass
+        saver = tf.train.Saver()
+        saver.save(sess, os.path.join(MODEL_SAVE_PATH, expt_name))
     
     else:
         val_loss = 0
@@ -138,14 +156,14 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
                 hi_mb, lo_mb = imgLoader(hi_list, lo_list, val_indices[iter:iter+size_mb])
                 val_feed = {ph_hi: hi_mb, ph_lo: lo_mb}
                 sess.run(train_op, feed_dict=val_feed)
-                val_loss = val_loss + sess.run(loss, feed_dict=val_feed)
+                val_loss = val_loss + sess.run(L2, feed_dict=val_feed)
 
         print('Summed validation loss for fold {}: {}'.format(fold, val_loss))
         log_file.write('Summed validation loss for fold {}: {}\n'.format(fold, val_loss))
         print('Validation loss per image: {}'.format(val_loss / (N_val - (N_val % size_mb))))
         log_file.write('Validation loss per image: {}\n'.format(val_loss / (N_val - (N_val % size_mb))))
         
-    print("Total time: {:.2f} min".format(time.time() - start_time))
-    log_file.write("Total time: {:.2f} min\n".format(time.time() - start_time))
+    print("Total time: {:.2f} min".format((time.time() - start_time) / 60))
+    log_file.write("Total time: {:.2f} min\n".format((time.time() - start_time) / 60))
 
 log_file.close()

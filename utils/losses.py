@@ -38,7 +38,8 @@ def regLaplace(hi_img, pred_img):
             strides=[1, 1, 1, 1, 1], padding='SAME')
 
     filt_vols = tf.square(filt_vols)
-    reg_val = tf.reduce_sum(tf.contrib.distributions.percentile(
-            filt_vols, q=95, axis=[1, 2, 3, 4]))
+#     reg_val = tf.reduce_sum(tf.contrib.distributions.percentile(
+#             filt_vols, q=95, axis=[1, 2, 3, 4]))
+    reg_val = tf.reduce_sum(filt_vols)
 
     return reg_val
