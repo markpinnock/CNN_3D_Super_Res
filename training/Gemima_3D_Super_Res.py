@@ -59,8 +59,8 @@ gpu_number = arguments.gpu
 LAMBDA = arguments.lamb
 
 MODEL_SAVE_PATH = "/home/mpinnock/models/" + expt_name + "/"
-LOG_SAVE_NAME = "/home/mpinnock/reports/SR_" + expt_name
-# LOG_SAVE_NAME = "C:/Users/roybo/SR_" + expt_name
+LOG_SAVE_NAME = "/home/mpinnock/reports/" + expt_name
+# LOG_SAVE_NAME = "C:/Users/roybo/" + expt_name
 
 ETA = 0.03
 vol_dims = [size_mb, image_res, image_res, 12, 1]
@@ -99,9 +99,10 @@ with tf.device('/device:GPU:{}'.format(gpu_number)):
     SRNet = UNet(ph_lo, start_nc)
     pred_images = SRNet.output
     L2 = lossL2(ph_hi, pred_images)
-    reg_term = regLaplace(ph_hi, pred_images)
-    loss = L2 + (LAMBDA * reg_term)
-    train_op = tf.train.AdamOptimizer(learning_rate=ETA).minimize(loss)
+    # reg_term = regLaplace(ph_hi, pred_images)
+    reg_term = regFFT(ph_hi, pred_images)
+    total_loss = L2 + (LAMBDA * reg_term)
+    train_op = tf.train.AdamOptimizer(learning_rate=ETA).minimize(total_loss)
 
 log_file = open(LOG_SAVE_NAME, 'w')
 start_time = time.time()
@@ -114,6 +115,7 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
         random.shuffle(train_indices)
         train_L2 = 0
         train_reg = 0
+        val_L2 = 0
 
         for iter in range(0, N_train, size_mb):
             if any(idx >= N_train for idx in list(range(iter, iter+size_mb))):
@@ -132,13 +134,26 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
         log_file.write('Epoch {} training loss per image: {}'.format(ep, train_L2 / (N_train - (N_train % size_mb))))
         
         if LAMBDA != 0:
-            print('Epoch {} reg val per image: {:.2f}'.format(ep, train_reg / (N_train - (N_train % size_mb))))
-            log_file.write(', reg val per image: {:.2f}'.format(train_reg / (N_train - (N_train % size_mb))))
-            print('Epoch {} regularised loss per image {:.2f}'.format(ep, (np.float(train_L2) + (LAMBDA * train_reg)) / (N_train - (N_train % size_mb))))
+            print('Reg loss per image: {:.2f}'.format(train_reg / (N_train - (N_train % size_mb))))
+            log_file.write(', reg loss per image: {:.2f}'.format(train_reg / (N_train - (N_train % size_mb))))
+            print('Reg loss per image {:.2f}'.format((np.float(train_L2) + (LAMBDA * train_reg)) / (N_train - (N_train % size_mb))))
             log_file.write(', reg loss per image {:.2f}\n'.format((np.float(train_L2) + (LAMBDA * train_reg)) / (N_train - (N_train % size_mb))))
                 
         else:
-            print('\n')
+            log_file.write('\n')
+    
+        if num_folds != 0:
+            for iter in range(0, N_val, size_mb):
+                if any(idx >= N_val for idx in list(range(iter, iter+size_mb))):
+                    continue
+
+                else:
+                    hi_mb, lo_mb = imgLoader(hi_list, lo_list, val_indices[iter:iter+size_mb])
+                    val_feed = {ph_hi: hi_mb, ph_lo: lo_mb}
+                    val_L2 = val_L2 + sess.run(L2, feed_dict=val_feed)
+
+            print('Epoch {} validation loss per image: {}'.format(ep, val_L2 / (N_val - (N_val % size_mb))))
+            log_file.write('Epoch {} validation loss per image: {}\n'.format(ep, val_L2 / (N_val - (N_val % size_mb))))
 
     if num_folds == 0:
         # pass
@@ -146,22 +161,10 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
         saver.save(sess, os.path.join(MODEL_SAVE_PATH, expt_name))
     
     else:
-        val_loss = 0
-
-        for iter in range(0, N_val, size_mb):
-            if any(idx >= N_val for idx in list(range(iter, iter+size_mb))):
-                continue
-
-            else:
-                hi_mb, lo_mb = imgLoader(hi_list, lo_list, val_indices[iter:iter+size_mb])
-                val_feed = {ph_hi: hi_mb, ph_lo: lo_mb}
-                sess.run(train_op, feed_dict=val_feed)
-                val_loss = val_loss + sess.run(L2, feed_dict=val_feed)
-
-        print('Summed validation loss for fold {}: {}'.format(fold, val_loss))
-        log_file.write('Summed validation loss for fold {}: {}\n'.format(fold, val_loss))
-        print('Validation loss per image: {}'.format(val_loss / (N_val - (N_val % size_mb))))
-        log_file.write('Validation loss per image: {}\n'.format(val_loss / (N_val - (N_val % size_mb))))
+        print('N_val = {}'.format(N_val - (N_val % size_mb)))
+        print('Summed validation loss for fold {}: {}'.format(fold, val_L2))
+        log_file.write('N_val = {}\n'.format(N_val - (N_val % size_mb)))
+        log_file.write('Summed validation loss for fold {}: {}\n'.format(fold, val_L2))
         
     print("Total time: {:.2f} min".format((time.time() - start_time) / 60))
     log_file.write("Total time: {:.2f} min\n".format((time.time() - start_time) / 60))
