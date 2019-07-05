@@ -7,16 +7,16 @@ hi_list = hi_list(3:end);
 lo_list = dir(LO_PATH);
 lo_list = lo_list(3:end);
 
-subject = 'UCLH_21093614';
-up_to_vol = 9;
-rest_vol = 20;
+subject = 'UCLH_23160588';
+up_to_vol = 10;
+rest_vol = 18;
 
 hi_out_1 = zeros(512, 512, 12 * up_to_vol);
 lo_out_1 = zeros(512, 512, 12 * up_to_vol);
 int_out_1 = zeros(512, 512, 12 * up_to_vol);
 hi_out_2 = zeros(512, 512, 12 * rest_vol);
 lo_out_2 = zeros(512, 512, 12 * rest_vol);
-int_out_2 = zeros(512, 512, 12 * up_to_vol);
+int_out_2 = zeros(512, 512, 12 * rest_vol);
 [X Y Z] = ndgrid(1:512, 1:512, 2:4:12);
 [Xq Yq Zq] = ndgrid(1:512, 1:512, 1:12);
 
@@ -79,7 +79,7 @@ for i = i:length(hi_list)
 end
 
 niftiwrite(hi_out_2, strcat(SAVE_PATH, subject, "_1_2", '_H.nii'));
-niftiwrite(lo_out_2, strcat(SAVE_PATH, subject, "_1_2", '_I.nii'));
-niftiwrite(int_out_2, strcat(SAVE_PATH, subject, "_1_2", '_L.nii'));
+niftiwrite(lo_out_2, strcat(SAVE_PATH, subject, "_1_2", '_L.nii'));
+niftiwrite(int_out_2, strcat(SAVE_PATH, subject, "_1_2", '_I.nii'));
 fprintf("SAVED\n");
 
