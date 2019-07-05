@@ -17,9 +17,13 @@ def regFFT(hi_img, pred_img):
 
     for idx in list(range(dims[0])):
         fft_vol = tf.signal.fft(tf.cast(tf.reshape(pred_img[idx, :, :, :, 0]\
-                - hi_img[idx, :, :, :, 0], shape=dims[1:4]), dtype=tf.complex64))
+                - hi_img[idx, :, :, :, 0], shape=[-1]), dtype=tf.complex64))
 
-        reg_val += tf.reduce_mean(tf.math.abs(fft_vol))
+        k_vals = tf.linspace(0.0, 2.0, dims[1] * dims[2] * dims[3])
+
+        fft_vals = fft_vol * tf.cast(k_vals, dtype=tf.complex64)
+        
+        reg_val += tf.contrib.distributions.percentile(tf.math.abs(fft_vals), q=95, axis=None)
 
     return reg_val
 
