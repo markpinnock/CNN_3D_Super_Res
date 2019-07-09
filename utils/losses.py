@@ -16,12 +16,14 @@ def regFFT(hi_img, pred_img):
     reg_val = 0
 
     for idx in list(range(dims[0])):
-        fft_vol = tf.signal.fft(tf.cast(tf.reshape(pred_img[idx, :, :, :, 0]\
-                - hi_img[idx, :, :, :, 0], shape=[-1]), dtype=tf.complex64))
+        fft_vol = tf.signal.fft3d(tf.cast(pred_img[idx, :, :, :, 0]\
+                - hi_img[idx, :, :, :, 0], dtype=tf.complex64))
 
-        k_vals = tf.linspace(0.0, 2.0, dims[1] * dims[2] * dims[3])
+        N = dims[1] * dims[2] * dims[3]
+        flat_fft = tf.reshape(fft_vol, shape=[-1])
+        k_vals = tf.linspace(0.0, 2.0, N)
 
-        fft_vals = fft_vol * tf.cast(k_vals, dtype=tf.complex64)
+        fft_vals = flat_fft[0:int(N/2)] * tf.cast(k_vals[0:int(N/2)], dtype=tf.complex64)
         
         reg_val += tf.contrib.distributions.percentile(tf.math.abs(fft_vals), q=95, axis=None)
 
