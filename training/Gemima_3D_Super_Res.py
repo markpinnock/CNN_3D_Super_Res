@@ -15,8 +15,8 @@ from utils.losses import lossL2
 from utils.losses import regFFT, regLaplace
 
 
-FILE_PATH = "/home/mpinnock/Data/"
-# FILE_PATH = "C:/Users/roybo/OneDrive - University College London/PhD/PhD_Prog/NPY_Vols/"
+# FILE_PATH = "/home/mpinnock/Data/"
+FILE_PATH = "C:/Users/roybo/OneDrive - University College London/PhD/PhD_Prog/NPY_Vols/"
 
 parser = ArgumentParser()
 parser.add_argument('--expt_name', '-ex', help="Experiment name", type=str)
@@ -59,8 +59,8 @@ gpu_number = arguments.gpu
 LAMBDA = arguments.lamb
 
 MODEL_SAVE_PATH = "/home/mpinnock/models/" + expt_name + "/"
-LOG_SAVE_NAME = "/home/mpinnock/reports/" + expt_name
-# LOG_SAVE_NAME = "C:/Users/roybo/" + expt_name
+# LOG_SAVE_NAME = "/home/mpinnock/reports/" + expt_name
+LOG_SAVE_NAME = "C:/Users/roybo/" + expt_name
 
 ETA = 0.03
 vol_dims = [size_mb, image_res, image_res, 12, 1]
@@ -105,6 +105,15 @@ with tf.device('/device:GPU:{}'.format(gpu_number)):
     train_op = tf.train.AdamOptimizer(learning_rate=ETA).minimize(total_loss)
 
 log_file = open(LOG_SAVE_NAME, 'w')
+log_file.write("nc{}_ep{}_n{}_fft{}".format(start_nc, num_epoch, N, LAMBDA))
+print("nc{}_ep{}_n{}_fft{}".format(start_nc, num_epoch, N, LAMBDA))
+
+if num_folds != 0:
+    log_file.write("_cv{}\n".format(fold))
+    print("_cv{}".format(fold))
+else:
+    log_file.write("\n")
+
 start_time = time.time()
 
 with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
@@ -136,8 +145,8 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
         if LAMBDA != 0:
             print('Reg loss per image: {:.2f}'.format(train_reg / (N_train - (N_train % size_mb))))
             log_file.write(', reg loss per image: {:.2f}'.format(train_reg / (N_train - (N_train % size_mb))))
-            print('Reg loss per image {:.2f}'.format((np.float(train_L2) + (LAMBDA * train_reg)) / (N_train - (N_train % size_mb))))
-            log_file.write(', reg loss per image {:.2f}\n'.format((np.float(train_L2) + (LAMBDA * train_reg)) / (N_train - (N_train % size_mb))))
+            print('Total loss per image {:.2f}'.format((np.float(train_L2) + (LAMBDA * train_reg)) / (N_train - (N_train % size_mb))))
+            log_file.write(', total loss per image {:.2f}\n'.format((np.float(train_L2) + (LAMBDA * train_reg)) / (N_train - (N_train % size_mb))))
                 
         else:
             log_file.write('\n')
@@ -156,9 +165,9 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
             log_file.write('Epoch {} validation loss per image: {}\n'.format(ep, val_L2 / (N_val - (N_val % size_mb))))
 
     if num_folds == 0:
-        # pass
-        saver = tf.train.Saver()
-        saver.save(sess, os.path.join(MODEL_SAVE_PATH, expt_name))
+        pass
+        # saver = tf.train.Saver()
+        # saver.save(sess, os.path.join(MODEL_SAVE_PATH, expt_name))
     
     else:
         print('N_val = {}'.format(N_val - (N_val % size_mb)))
