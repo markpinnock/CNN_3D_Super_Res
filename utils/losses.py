@@ -2,12 +2,19 @@ import numpy as np
 import scipy.ndimage as scind
 import tensorflow as tf
 
+
+def calcDice(vol_A, vol_B):
+        numer = 2 * np.sum((vol_A * vol_B))
+        denom = np.sum(vol_A) + np.sum(vol_B) + 1e-6
+        return numer / denom
+
+
 def lossL1(hi_img, pred_img):
-    return tf.reduce_sum(tf.abs(hi_img - pred_img), axis=[0, 1, 2, 3])
+    return tf.reduce_mean(tf.abs(hi_img - pred_img), axis=[0, 1, 2, 3])
 
 
 def lossL2(hi_img, pred_img):
-    return tf.reduce_sum(tf.square(hi_img - pred_img), axis=[0, 1, 2, 3])
+    return tf.reduce_mean(tf.square(hi_img - pred_img), axis=[0, 1, 2, 3])
 
 
 def regFFT(hi_img, pred_img):
@@ -23,7 +30,8 @@ def regFFT(hi_img, pred_img):
 
         fft_vals = fft_vol * tf.cast(k_vals, dtype=tf.complex64)
         
-        reg_val += tf.contrib.distributions.percentile(tf.math.abs(fft_vals), q=95, axis=None)
+        # reg_val += tf.contrib.distributions.percentile(tf.math.abs(fft_vals), q=95, axis=None)
+        reg_val += tf.reduce_mean(tf.math.abs(fft_vals), axis=None)
 
     return reg_val
 
@@ -43,7 +51,8 @@ def reg3DFFT(hi_img, pred_img):
 
         fft_vals = flat_fft[0:int(N/2)] * tf.cast(k_vals[0:int(N/2)], dtype=tf.complex64)
         
-        reg_val += tf.contrib.distributions.percentile(tf.math.abs(fft_vals), q=95, axis=None)
+        # reg_val += tf.contrib.distributions.percentile(tf.math.abs(fft_vals), q=95, axis=None)
+        reg_val += tf.reduce_mean(tf.math.abs(fft_vals), axis=None)
 
     return reg_val
 
