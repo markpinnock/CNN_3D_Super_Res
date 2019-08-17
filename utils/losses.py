@@ -52,7 +52,7 @@ def regFFT(hi_img, pred_img):
         fft_vals = fft_vol * tf.cast(k_vals, dtype=tf.complex64)
         
         # reg_val += tf.contrib.distributions.percentile(tf.math.abs(fft_vals), q=95, axis=None)
-        reg_val += tf.reduce_sum(tf.reduce_mean(tf.math.abs(fft_vals), axis=[1, 2, 3, 4]), axis=None)
+        reg_val += tf.reduce_mean(tf.math.abs(fft_vals), axis=None)
 
     return reg_val
 
@@ -73,7 +73,7 @@ def reg3DFFT(hi_img, pred_img):
         fft_vals = flat_fft[0:int(N/2)] * tf.cast(k_vals[0:int(N/2)], dtype=tf.complex64)
         
         # reg_val += tf.contrib.distributions.percentile(tf.math.abs(fft_vals), q=95, axis=None)
-        reg_val += tf.reduce_sum(tf.reduce_mean(tf.math.abs(fft_vals), axis=[1, 2, 3, 4]), axis=None)
+        reg_val += tf.reduce_mean(tf.math.abs(fft_vals), axis=None)
 
     return reg_val
 
