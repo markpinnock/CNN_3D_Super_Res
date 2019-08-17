@@ -1,12 +1,13 @@
 import numpy as np
 import scipy.ndimage as scind
+import skimage.measure as sk
 import tensorflow as tf
 
 
 def calcDice(vol_A, vol_B):
-        numer = 2 * np.sum((vol_A * vol_B))
-        denom = np.sum(vol_A) + np.sum(vol_B) + 1e-6
-        return numer / denom
+    numer = 2 * np.sum((vol_A * vol_B))
+    denom = np.sum(vol_A) + np.sum(vol_B) + 1e-6
+    return numer / denom
 
 
 def lossL1(hi_img, pred_img):
@@ -15,6 +16,26 @@ def lossL1(hi_img, pred_img):
 
 def lossL2(hi_img, pred_img):
     return tf.reduce_mean(tf.square(hi_img - pred_img), axis=[0, 1, 2, 3])
+
+
+def calcPSNR(hi_img, pred_img):
+    dims = pred_img.shape
+    val_pSNR = 0
+
+    for idx in list(range(dims[0])):
+        val_pSNR += sk.compare_psnr(hi_img[idx, :, :, :, 0], pred_img[idx, :, :, :, 0])
+
+    return val_pSNR
+
+
+def calcSSIM(hi_img, pred_img):
+    dims = pred_img.shape
+    val_SSIM = 0
+
+    for idx in list(range(dims[0])):
+        val_SSIM += sk.compare_ssim(hi_img[idx, :, :, :, 0], pred_img[idx, :, :, :, 0])
+
+    return val_SSIM
 
 
 def regFFT(hi_img, pred_img):
