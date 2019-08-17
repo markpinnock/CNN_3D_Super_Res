@@ -7,19 +7,17 @@ import tensorflow as tf
 import time
 
 sys.path.append('..')
-sys.path.append('/home/mpinnock/CNN_3D_Super_Res/scripts')
+sys.path.append('/home/mpinnock/CNN_3D_Super_Res/scripts/')
 
 from utils.UNet import UNet
 from utils.UNet2 import UNet2
-from utils.functions import imgLoader2
-from utils.losses import lossL2
+from utils.functions import imgLoader, imgLoader2
+from utils.losses import lossL2, calcPSNR, calcSSIM
 from utils.losses import regFFT, reg3DFFT, regLaplace
 
 
-""" ADD LOG FILE OUTPUT AT BEGINNING, ADD METRICS TO VALIDATION, ADD FILE PATH TO ARGS"""
-
 parser = ArgumentParser()
-parser.add_argument('--file_path', '-f', help="Data file path", type=str)
+parser.add_argument('--file_path', '-fp', help="Data file path", type=str)
 parser.add_argument('--expt_name', '-ex', help="Experiment name", type=str)
 parser.add_argument('--resolution', '-r', help="Resolution e.g. 512, 128", type=int, nargs='?', const=512, default=512)
 parser.add_argument('--minibatch_size', '-mb', help="Minibatch size", type=int)
@@ -34,11 +32,12 @@ arguments = parser.parse_args()
 if arguments.file_path == None:
     FILE_PATH = "C:/Users/rmappin/OneDrive - University College London/PhD/PhD_Prog/NPY_Vols/"
 
-    if not os.path.exists:
+    if not os.path.exists(FILE_PATH):
         FILE_PATH = "C:/Users/roybo/OneDrive - University College London/PhD/PhD_Prog/NPY_Vols/"
 
 else:
-    FILE_PATH = arguments.file_path
+    FILE_STEM = arguments.file_path
+    FILE_PATH = FILE_STEM + 'data/'
 
 if arguments.expt_name == None:
     raise ValueError("Must provide experiment name")
@@ -69,13 +68,22 @@ gpu_number = arguments.gpu
 LAMBDA = arguments.lamb
 
 MODEL_SAVE_PATH = "/home/mpinnock/models/" + expt_name + "/"
-# LOG_SAVE_NAME = "/home/mpinnock/reports/" + expt_name
-LOG_SAVE_NAME = "C:/Users/roybo/" + expt_name
 
-ETA = 0.03
+if not os.path.exists(MODEL_SAVE_PATH) and num_folds == 0:
+    os.mkdir(MODEL_SAVE_PATH)
+
+if arguments.file_path == None:
+    LOG_SAVE_NAME = "C:/Users/rmappin/" + expt_name
+
+    if not os.path.exists("C:/Users/rmappin/OneDrive - University College London/PhD/PhD_Prog/006_CNN_3D_Super_Res/test_logs/"):
+        LOG_SAVE_NAME = "C:/Users/roybo/OneDrive - University College London/PhD/PhD_Prog/006_CNN_3D_Super_Res/test_logs/" + expt_name
+else:
+    LOG_SAVE_NAME = FILE_STEM + "reports/" + expt_name
+
+ETA = 0.001
 hi_vol_dims = [size_mb, image_res, image_res, 12, 1]
-lo_vol_dims = [size_mb, image_res, image_res, 3, 1]
-np.set_printoptions(precision=2)
+lo_vol_dims = [size_mb, image_res, image_res, 12, 1]
+
 random.seed(10)
 
 os.chdir(FILE_PATH)
@@ -111,7 +119,7 @@ with tf.device('/device:GPU:{}'.format(gpu_number)):
     pred_images = SRNet.output
     L2 = lossL2(ph_hi, pred_images)
     # reg_term = regLaplace(ph_hi, pred_images)
-    reg_term = regFFT(ph_hi, pred_images)
+    reg_term = reg3DFFT(ph_hi, pred_images)
     total_loss = L2 + (LAMBDA * reg_term)
     train_op = tf.train.AdamOptimizer(learning_rate=ETA).minimize(total_loss)
 
@@ -136,13 +144,15 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
         train_L2 = 0
         train_reg = 0
         val_L2 = 0
+        val_pSNR = 0
+        val_SSIM = 0
 
         for iter in range(0, N_train, size_mb):
             if any(idx >= N_train for idx in list(range(iter, iter+size_mb))):
                 continue
             
             else:
-                hi_mb, lo_mb = imgLoader2(hi_list, lo_list, train_indices[iter:iter+size_mb])
+                hi_mb, lo_mb = imgLoader(hi_list, lo_list, train_indices[iter:iter+size_mb])
                 train_feed = {ph_hi: hi_mb, ph_lo: lo_mb}
                 sess.run(train_op, feed_dict=train_feed)
                 train_L2 = train_L2 + sess.run(L2, feed_dict=train_feed)
@@ -150,14 +160,14 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
                 if LAMBDA != 0:
                     train_reg = train_reg + sess.run(reg_term, feed_dict=train_feed)
 
-        print('Epoch {} training loss per image: {}'.format(ep, train_L2 / (N_train - (N_train % size_mb))))
-        log_file.write('Epoch {} training loss per image: {}'.format(ep, train_L2 / (N_train - (N_train % size_mb))))
+        print('Epoch {} train loss: {}'.format(ep, train_L2 / (N_train - (N_train % size_mb))))
+        log_file.write('Epoch {} train loss: {}'.format(ep, train_L2 / (N_train - (N_train % size_mb))))
         
         if LAMBDA != 0:
-            print('Reg loss per image: {:.2f}'.format(train_reg / (N_train - (N_train % size_mb))))
-            log_file.write(', reg loss per image: {:.2f}'.format(train_reg / (N_train - (N_train % size_mb))))
-            print('Total loss per image {:.2f}'.format((np.float(train_L2) + (LAMBDA * train_reg)) / (N_train - (N_train % size_mb))))
-            log_file.write(', total loss per image {:.2f}\n'.format((np.float(train_L2) + (LAMBDA * train_reg)) / (N_train - (N_train % size_mb))))
+            print('Reg loss: {}'.format(train_reg / (N_train - (N_train % size_mb))))
+            log_file.write(', reg loss: {}'.format(train_reg / (N_train - (N_train % size_mb))))
+            print('Total loss {}'.format((np.float(train_L2) + (LAMBDA * train_reg)) / (N_train - (N_train % size_mb))))
+            log_file.write(', total loss {}\n'.format((np.float(train_L2) + (LAMBDA * train_reg)) / (N_train - (N_train % size_mb))))
                 
         else:
             log_file.write('\n')
@@ -168,23 +178,27 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
                     continue
 
                 else:
-                    hi_mb, lo_mb = imgLoader2(hi_list, lo_list, val_indices[iter:iter+size_mb])
+                    hi_mb, lo_mb = imgLoader(hi_list, lo_list, val_indices[iter:iter+size_mb])
                     val_feed = {ph_hi: hi_mb, ph_lo: lo_mb}
-                    val_L2 = val_L2 + sess.run(L2, feed_dict=val_feed)
+                    val_L2 += sess.run(L2, feed_dict=val_feed)
+                    val_pSNR += calcPSNR(sess.run(ph_hi, feed_dict=val_feed), sess.run(ph_lo, feed_dict=val_feed))
+                    val_SSIM += calcSSIM(sess.run(ph_hi, feed_dict=val_feed), sess.run(ph_lo, feed_dict=val_feed))
 
-            print('Epoch {} validation loss per image: {}'.format(ep, val_L2 / (N_val - (N_val % size_mb))))
-            log_file.write('Epoch {} validation loss per image: {}\n'.format(ep, val_L2 / (N_val - (N_val % size_mb))))
+            print('Epoch {} val loss: {}'.format(ep, val_L2 / (N_val - (N_val % size_mb))))
+            log_file.write('Epoch {} val loss: {}\n'.format(ep, val_L2 / (N_val - (N_val % size_mb))))
 
     if num_folds == 0:
-        # pass
-        saver = tf.train.Saver()
-        saver.save(sess, os.path.join(MODEL_SAVE_PATH, expt_name))
+        pass
+        # saver = tf.train.Saver()
+        # saver.save(sess, os.path.join(MODEL_SAVE_PATH, expt_name))
     
     else:
         print('N_val = {}'.format(N_val - (N_val % size_mb)))
-        print('Summed validation loss for fold {}: {}'.format(fold, val_L2))
+        print('Sum val loss for fold {}: {}'.format(fold, val_L2))
+        print('pSNR per vol: {}, SSIM per vol: {}'.format(val_pSNR/ N_val, val_SSIM / N_val))
         log_file.write('N_val = {}\n'.format(N_val - (N_val % size_mb)))
         log_file.write('Summed validation loss for fold {}: {}\n'.format(fold, val_L2))
+        log_file.write('pSNR per vol: {}, SSIM per vol: {}\n'.format(val_pSNR/ N_val, val_SSIM / N_val))
         
     print("Total time: {:.2f} min".format((time.time() - start_time) / 60))
     log_file.write("Total time: {:.2f} min\n".format((time.time() - start_time) / 60))
