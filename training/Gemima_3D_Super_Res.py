@@ -115,7 +115,7 @@ else:
 with tf.device('/device:GPU:{}'.format(gpu_number)):
     ph_hi = tf.placeholder(tf.float32, hi_vol_dims)
     ph_lo = tf.placeholder(tf.float32, lo_vol_dims)
-    SRNet = UNet(ph_lo, start_nc)
+    SRNet = UNet2(ph_lo, start_nc)
     pred_images = SRNet.output
     L2 = lossL2(ph_hi, pred_images)
     # reg_term = regLaplace(ph_hi, pred_images)
@@ -181,26 +181,29 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
                     hi_mb, lo_mb = imgLoader(hi_list, lo_list, val_indices[iter:iter+size_mb])
                     val_feed = {ph_hi: hi_mb, ph_lo: lo_mb}
                     val_L2 += sess.run(L2, feed_dict=val_feed)
-                    val_pSNR += calcPSNR(sess.run(ph_hi, feed_dict=val_feed), sess.run(ph_lo, feed_dict=val_feed))
-                    val_SSIM += calcSSIM(sess.run(ph_hi, feed_dict=val_feed), sess.run(ph_lo, feed_dict=val_feed))
+                    val_pSNR += calcPSNR(sess.run(ph_hi, feed_dict=val_feed), sess.run(pred_images, feed_dict=val_feed))
+                    val_SSIM += calcSSIM(sess.run(ph_hi, feed_dict=val_feed), sess.run(pred_images, feed_dict=val_feed))
 
             print('Epoch {} val loss: {}'.format(ep, val_L2 / (N_val - (N_val % size_mb))))
             log_file.write('Epoch {} val loss: {}\n'.format(ep, val_L2 / (N_val - (N_val % size_mb))))
 
     if num_folds == 0:
-        pass
-        # saver = tf.train.Saver()
-        # saver.save(sess, os.path.join(MODEL_SAVE_PATH, expt_name))
+        # pass
+        saver = tf.train.Saver()
+        saver.save(sess, os.path.join(MODEL_SAVE_PATH, expt_name))
     
     else:
         print('N_val = {}'.format(N_val - (N_val % size_mb)))
         print('Sum val loss for fold {}: {}'.format(fold, val_L2))
-        print('pSNR per vol: {}, SSIM per vol: {}'.format(val_pSNR/ N_val, val_SSIM / N_val))
+        print('pSNR per vol: {}'.format(val_pSNR/ N_val))
+        print('SSIM per vol: {}'.format(val_SSIM / N_val))
         log_file.write('N_val = {}\n'.format(N_val - (N_val % size_mb)))
         log_file.write('Summed validation loss for fold {}: {}\n'.format(fold, val_L2))
-        log_file.write('pSNR per vol: {}, SSIM per vol: {}\n'.format(val_pSNR/ N_val, val_SSIM / N_val))
+        log_file.write('pSNR per vol: {}\n'.format(val_pSNR/ N_val))
+        log_file.write('SSIM per vol: {}\n'.format(val_SSIM / N_val))
         
     print("Total time: {:.2f} min".format((time.time() - start_time) / 60))
     log_file.write("Total time: {:.2f} min\n".format((time.time() - start_time) / 60))
+    print("Parameters: {}".format(np.sum([np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()])))
 
 log_file.close()
