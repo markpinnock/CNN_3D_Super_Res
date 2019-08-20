@@ -15,9 +15,7 @@ def convLayer(layer_input, channels, name='conv_layer'):
     with tf.variable_scope(name):
         strides = [1, 1, 1, 1, 1]
         w = convKernel(channels)
-        conv = tf.nn.conv3d(layer_input, w, strides, padding='SAME')
-        norm = tf.contrib.layers.batch_norm(conv)
-        return tf.nn.relu(norm)
+        return tf.nn.relu(tf.nn.conv3d(layer_input, w, strides, padding='SAME'))
 
 
 # Downsamples data by 2 in all spatial dimensions
@@ -42,7 +40,7 @@ def convSkipLayer(layer_input, skip_input, channels, name='conv_skip_layer'):
     with tf.variable_scope(name):
         strides = [1, 1, 1, 1, 1]
         w = convKernel(channels)
-        return tf.nn.relu(tf.contrib.layers.batch_norm(tf.nn.conv3d(layer_input + skip_input, w, strides, padding='SAME')))
+        return tf.nn.relu(tf.nn.conv3d(layer_input + skip_input, w, strides, padding='SAME'))
 
 
 class UNet:
