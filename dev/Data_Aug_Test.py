@@ -24,18 +24,18 @@ hi_vol, lo_vol = imgLoader(hi_list, lo_list, [0, 1])
 
 class DataAugmentation:
 
-    def __init__(self, img_dims, eta):
+    def __init__(self, img_dims, mu):
         if len(img_dims) != 5:
             print(img_dims, file=sys.stderr)
             raise ValueError('Must be 5 image volume dimensions')
         else:
             self._img_dims = img_dims
 
-        if eta < 0:
-            print(eta, file=sys.stderr)
-            raise ValueError('Eta must be greater than or equal to zero')
+        if mu < 0:
+            print(mu, file=sys.stderr)
+            raise ValueError('mu must be greater than or equal to zero')
         else:
-            self._eta = eta
+            self._mu = mu
 
         self._ident_mat = np.identity(4)
         self._flat_coords = self._coordGen()
@@ -62,7 +62,7 @@ class DataAugmentation:
 
         flip_mat = np.copy(self._ident_mat)
 
-        if self._eta == 0:
+        if self._mu == 0:
             pass
         else:
             if t1 < 0:
@@ -78,7 +78,7 @@ class DataAugmentation:
     
     def rotMat(self):
         theta = np.random.uniform(-0.8, 0.8)
-        theta *= self._eta
+        theta *= self._mu
     
         rot_mat = np.array(
         [[np.cos(theta), -np.sin(theta), 0, 0],
@@ -93,9 +93,9 @@ class DataAugmentation:
         return self
     
     def scaleMat(self):
-        if self._eta >= 1:
-            z = np.random.uniform(0.5 / self._eta, 1.2)
-        elif self._eta == 0:
+        if self._mu >= 1:
+            z = np.random.uniform(0.5 / self._mu, 1.2)
+        elif self._mu == 0:
             z = 1
         else:
             z = np.random.uniform(0.8, 1.2)
@@ -112,8 +112,8 @@ class DataAugmentation:
     def shearMat(self):
         s_x = np.random.uniform(-0.2, 0.2)
         s_y = np.random.uniform(-0.2, 0.2)
-        s_x *= self._eta
-        s_y *= self._eta
+        s_x *= self._mu
+        s_y *= self._mu
 
         if (s_x > 0 and s_y < 0) or (s_x < 0 and s_y > 0):
             s_y = -s_y
@@ -131,8 +131,8 @@ class DataAugmentation:
         if t_x == None or t_y == None:
             t_x = np.random.uniform(-self._img_dims[1] / 8, self._img_dims[1] / 8)
             t_y = np.random.uniform(-self._img_dims[2] / 8, self._img_dims[2] / 8)
-            t_x *= self._eta
-            t_y *= self._eta
+            t_x *= self._mu
+            t_y *= self._mu
 
         trans_mat = np.copy(self._ident_mat)
         trans_mat[0, 3] = t_x
@@ -167,7 +167,7 @@ class DataAugmentation:
         return new_hi_vol, new_lo_vol
 
 
-DataAug = DataAugmentation([2, 128, 128, 12, 1], 0.5)
+DataAug = DataAugmentation([2, 128, 128, 12, 1], 0.3)
 new_hi_vol, new_lo_vol = DataAug.shearMat().rotMat().scaleMat().flipMat().warpImg(hi_vol, lo_vol)
 
 for i in range(1):
