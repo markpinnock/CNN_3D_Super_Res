@@ -11,11 +11,11 @@ def calcDice(vol_A, vol_B):
 
 
 def lossL1(hi_img, pred_img):
-    return tf.reduce_sum(tf.reduce_mean(tf.abs(hi_img - pred_img), axis=[1, 2, 3, 4]), axis=None)
+    return tf.reduce_sum(tf.abs(hi_img - pred_img), axis=None)
 
 
 def lossL2(hi_img, pred_img):
-    return tf.reduce_sum(tf.reduce_mean(tf.square(hi_img - pred_img), axis=[1, 2, 3, 4]), axis=None)
+    return tf.reduce_sum(tf.square(hi_img - pred_img), axis=None)
 
 
 def calcPSNR(hi_img, pred_img):

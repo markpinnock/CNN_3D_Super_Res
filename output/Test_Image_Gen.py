@@ -7,7 +7,8 @@ import tensorflow as tf
 sys.path.append('..')
 
 from utils.UNet import UNet
-from utils.functions import imgLoader
+from utils.UNet2 import UNet2
+from utils.functions import imgLoader, imgLoader2
 from utils.losses import lossL2
 
 
@@ -58,7 +59,8 @@ if not os.path.exists(IMAGE_SAVE_PATH):
     pass
 
 
-vol_dims = [size_mb, image_res, image_res, 12, 1]
+hi_vol_dims = [size_mb, image_res, image_res, 12, 1]
+lo_vol_dims = [size_mb, image_res, image_res, 3, 1]
 
 os.chdir(FILE_PATH)
 hi_list = os.listdir('Hi/')
@@ -71,10 +73,10 @@ N = len(hi_list)
 
 indices = list(range(0, N))
 
-ph_hi = tf.placeholder(tf.float32, vol_dims)
-ph_lo = tf.placeholder(tf.float32, vol_dims)
+ph_hi = tf.placeholder(tf.float32, hi_vol_dims)
+ph_lo = tf.placeholder(tf.float32, lo_vol_dims)
 
-SRNet = UNet(ph_lo, start_nc)
+SRNet = UNet2(ph_lo, start_nc)
 pred_images = SRNet.output
 
 loss = lossL2(ph_hi, pred_images)
@@ -85,7 +87,7 @@ with tf.Session() as sess:
     saver.restore(sess, MODEL_SAVE_PATH + expt_name)
 
     for iter in range(0, N, size_mb):
-        hi_mb, lo_mb = imgLoader(hi_list, lo_list, indices[iter:iter+size_mb])
+        hi_mb, lo_mb = imgLoader2(hi_list, lo_list, indices[iter:iter+size_mb])
         test_feed = {ph_hi: hi_mb, ph_lo: lo_mb}
         output = sess.run(pred_images, feed_dict=test_feed)
 
