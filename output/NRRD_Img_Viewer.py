@@ -7,7 +7,7 @@ import os
 
 parser = ArgumentParser()
 parser.add_argument('--expt_name', '-ex', help="Experiment name", type=str)
-parser.add_argument('--phase', '-p', help='Expt phase', type=str, const='3', default='3')
+parser.add_argument('--phase', '-p', help='Expt phase', type=str, nargs='?', const='3', default='3')
 parser.add_argument('--subject', '-s', help="Subject number", type=str)
 parser.add_argument('--plane', '-pl', help="ax, co, sa", type=str)
 parser.add_argument('--diff', '-d', help="Difference images", type=str, nargs='?', const='n', default='n')
