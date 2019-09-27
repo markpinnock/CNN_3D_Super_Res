@@ -5,7 +5,7 @@ SET save_path="C:\Users\rmappin\PhD_Data\Super_Res_Data\Toshiba_Vols\NRRD_Test\O
 
 CALL %ana_path%\Scripts\activate.bat base
 
-SET list=nc4_ep50_n1026_fft1d1e2, nc4_ep50_n1026_fft3d2e1, nc4_ep50_n1026_fft3d2e2
+SET list=nc4_ep50_n1026_UNet, nc4_ep50_n1026_UNet2, nc8_ep50_n1026_UNet, nc8_ep50_n1026_UNet2
 
 FOR %%f IN (%list%) DO IF NOT EXIST %save_path%\%%f MKDIR %save_path%\%%f
 FOR %%f IN (%list%) DO ^
