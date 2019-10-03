@@ -3,7 +3,7 @@ import scipy.interpolate as sci
 import sys
 
 
-class DataAugmentation:
+class DataAugmentationNumpy:
 
     def __init__(self, img_dims, mu):
         if len(img_dims) != 5:
