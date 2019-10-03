@@ -90,4 +90,4 @@ class UNet:
         self.uplayer_f = up_layer_f
 
         # Output
-        self.output = tf.nn.relu(up_layer_f)
+        self.output = up_layer_f
