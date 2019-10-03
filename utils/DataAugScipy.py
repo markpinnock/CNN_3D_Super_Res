@@ -29,8 +29,8 @@ class DataAugmentationScipy:
         return flip_mat
     
     def rotMat(self, theta):
+        theta = np.random.normal(0, theta)
         theta = theta / 180 * np.pi
-        theta = np.random.uniform(-theta, theta)
     
         rot_mat = np.array(
         [[np.cos(theta), -np.sin(theta)],
@@ -40,7 +40,7 @@ class DataAugmentationScipy:
         return rot_mat
     
     def scaleMat(self, scale):
-        z = np.random.uniform(1, scale)
+        z = np.random.normal(1, scale)
         scale_mat = np.copy(self._ident_mat)
         scale_mat[0, 0] = z
         scale_mat[1, 1] = z
