@@ -11,6 +11,8 @@ sys.path.append('/home/mpinnock/CNN_3D_Super_Res/scripts/')
 
 from utils.UNet import UNet
 from utils.UNet2 import UNet2
+from utils.DataAugScipy import DataAugmentationScipy
+from utils.DataAugKeras import DataAugmentationKeras
 from utils.functions import imgLoader, imgLoader2
 from utils.losses import lossL2, calcPSNR, calcSSIM
 from utils.losses import regFFT, reg3DFFT, regLaplace
@@ -20,12 +22,15 @@ parser = ArgumentParser()
 parser.add_argument('--file_path', '-fp', help="Data file path", type=str)
 parser.add_argument('--expt_name', '-ex', help="Experiment name", type=str)
 parser.add_argument('--resolution', '-r', help="Resolution e.g. 512, 128", type=int, nargs='?', const=512, default=512)
+parser.add_argument('--down_samp', '-dn', help="Down-sampling factor e.g. 2, 4", type=int, nargs='?', const=1, default=1)
+parser.add_argument('--data_aug', '-da', help="Data augmentation", action='store_true')
 parser.add_argument('--minibatch_size', '-mb', help="Minibatch size", type=int)
 parser.add_argument('--num_chans', '-nc', help="Starting number of channels", type=int, nargs='?', const=8, default=8)
 parser.add_argument('--epochs', '-ep', help="Number of epochs", type=int)
 parser.add_argument('--folds', '-f', help="Number of cross-validation folds", type=int, nargs='?', const=0, default=0)
 parser.add_argument('--crossval', '-c', help="Fold number", type=int, nargs='?', const=0, default=0)
 parser.add_argument('--gpu', '-g', help="GPU number", type=int, nargs='?', const=0, default=0)
+parser.add_argument('--eta', '-e', help="Learning rate", type=float, nargs='?', const=0.001, default=0.001)
 parser.add_argument('--lamb', '-l', help="Regularisation hyperparameter", type=float, nargs='?', const=0.0, default=0.0)
 arguments = parser.parse_args()
 
@@ -37,7 +42,7 @@ if arguments.file_path == None:
 
 else:
     FILE_STEM = arguments.file_path
-    FILE_PATH = FILE_STEM + 'data/'
+    FILE_PATH = FILE_STEM + 'Data/'
 
 if arguments.expt_name == None:
     raise ValueError("Must provide experiment name")
@@ -45,6 +50,7 @@ else:
     expt_name = arguments.expt_name
 
 image_res = arguments.resolution
+down_samp = arguments.down_samp
 
 if arguments.minibatch_size == None:
     raise ValueError("Must provide minibatch size")
@@ -80,7 +86,7 @@ if arguments.file_path == None:
 else:
     LOG_SAVE_NAME = FILE_STEM + "reports/" + expt_name
 
-ETA = 0.001
+ETA = arguments.eta
 hi_vol_dims = [size_mb, image_res, image_res, 12, 1]
 lo_vol_dims = [size_mb, image_res, image_res, 12, 1]
 
@@ -112,14 +118,27 @@ else:
     N_train = len(train_indices)
     N_val = len(val_indices)
 
+# NB, parameters are standard deviations
+if arguments.data_aug:
+    aug_dict = {
+        'flip': None,
+        'rot': 41,
+        'scale': 0.17,
+        'shear': None
+    }
+    
+    DataAug = DataAugmentationScipy(hi_vol_dims)
+
 with tf.device('/device:GPU:{}'.format(gpu_number)):
     ph_hi = tf.placeholder(tf.float32, hi_vol_dims)
     ph_lo = tf.placeholder(tf.float32, lo_vol_dims)
-    SRNet = UNet2(ph_lo, start_nc)
+    ground_truth = ph_hi[:, ::down_samp, ::down_samp, :, :]
+    input_image = ph_lo[:, ::down_samp, ::down_samp, :, :]
+    SRNet = UNet(input_image, start_nc)
     pred_images = SRNet.output
-    L2 = lossL2(ph_hi, pred_images)
-    # reg_term = regLaplace(ph_hi, pred_images)
-    reg_term = reg3DFFT(ph_hi, pred_images)
+    L2 = lossL2(ground_truth, pred_images)
+    # reg_term = regLaplace(ground_truth, pred_images)
+    reg_term = reg3DFFT(ground_truth, pred_images)
     total_loss = L2 + (LAMBDA * reg_term)
     train_op = tf.train.AdamOptimizer(learning_rate=ETA).minimize(total_loss)
 
@@ -153,6 +172,12 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
             
             else:
                 hi_mb, lo_mb = imgLoader(hi_list, lo_list, train_indices[iter:iter+size_mb])
+                
+                if arguments.data_aug:
+                    hi_mb, lo_mb = DataAug.warpImg(
+                        hi_mb, lo_mb, aug_dict['flip'], aug_dict['rot'],
+                        aug_dict['scale'], aug_dict['shear'])
+
                 train_feed = {ph_hi: hi_mb, ph_lo: lo_mb}
                 sess.run(train_op, feed_dict=train_feed)
                 train_L2 = train_L2 + sess.run(L2, feed_dict=train_feed)
@@ -181,8 +206,8 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
                     hi_mb, lo_mb = imgLoader(hi_list, lo_list, val_indices[iter:iter+size_mb])
                     val_feed = {ph_hi: hi_mb, ph_lo: lo_mb}
                     val_L2 += sess.run(L2, feed_dict=val_feed)
-                    val_pSNR += calcPSNR(sess.run(ph_hi, feed_dict=val_feed), sess.run(pred_images, feed_dict=val_feed))
-                    val_SSIM += calcSSIM(sess.run(ph_hi, feed_dict=val_feed), sess.run(pred_images, feed_dict=val_feed))
+                    val_pSNR += calcPSNR(sess.run(ground_truth, feed_dict=val_feed), sess.run(pred_images, feed_dict=val_feed))
+                    val_SSIM += calcSSIM(sess.run(ground_truth, feed_dict=val_feed), sess.run(pred_images, feed_dict=val_feed))
 
             print('Epoch {} val loss: {}'.format(ep, val_L2 / (N_val - (N_val % size_mb))))
             log_file.write('Epoch {} val loss: {}\n'.format(ep, val_L2 / (N_val - (N_val % size_mb))))
