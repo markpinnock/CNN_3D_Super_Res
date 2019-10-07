@@ -143,14 +143,19 @@ with tf.device('/device:GPU:{}'.format(gpu_number)):
     train_op = tf.train.AdamOptimizer(learning_rate=ETA).minimize(total_loss)
 
 log_file = open(LOG_SAVE_NAME, 'w')
-log_file.write("nc{}_ep{}_n{}_fft{}".format(start_nc, num_epoch, N, LAMBDA))
-print("nc{}_ep{}_n{}_fft{}".format(start_nc, num_epoch, N, LAMBDA))
+log_file.write("nc{}_ep{}_n{}_eta{}_fft{}".format(start_nc, num_epoch, N, ETA, LAMBDA))
+print("nc{}_ep{}_n{}_eta{}_fft{}".format(start_nc, num_epoch, N, ETA, LAMBDA))
 
 if num_folds != 0:
     log_file.write("_cv{}\n".format(fold))
     print("_cv{}".format(fold))
 else:
     log_file.write("\n")
+
+if arguments.data_aug:
+    log_file.write("AUGMENTED\n")
+else:
+    log_file.write("NOT AUGMENTED\n")
 
 start_time = time.time()
 
