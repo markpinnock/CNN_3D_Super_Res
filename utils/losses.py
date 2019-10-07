@@ -11,11 +11,11 @@ def calcDice(vol_A, vol_B):
 
 
 def lossL1(hi_img, pred_img):
-    return tf.reduce_sum(tf.abs(hi_img - pred_img), axis=None)
+    return tf.reduce_sum(tf.reduce_mean(tf.abs(hi_img - pred_img), axis=[1, 2, 3, 4]), axis=None)
 
 
 def lossL2(hi_img, pred_img):
-    return tf.reduce_sum(tf.square(hi_img - pred_img), axis=None)
+    return tf.reduce_sum(tf.reduce_mean(tf.square(hi_img - pred_img), axis=[1, 2, 3, 4]), axis=None)
 
 
 def calcPSNR(hi_img, pred_img):
@@ -40,6 +40,7 @@ def calcSSIM(hi_img, pred_img):
 
 def regFFT(hi_img, pred_img):
     dims = pred_img.get_shape().as_list()
+    N = dims[0] * dims[1] * dims[2] * dims[3] * dims[4]
 
     reg_val = 0
 
@@ -51,14 +52,14 @@ def regFFT(hi_img, pred_img):
 
         fft_vals = fft_vol * tf.cast(k_vals, dtype=tf.complex64)
         
-        # reg_val += tf.contrib.distributions.percentile(tf.math.abs(fft_vals), q=95, axis=None)
         reg_val += tf.reduce_mean(tf.math.abs(fft_vals), axis=None)
 
-    return reg_val
+    return reg_val / N
 
 
 def reg3DFFT(hi_img, pred_img):
     dims = pred_img.get_shape().as_list()
+    N = dims[0] * dims[1] * dims[2] * dims[3] * dims[4]
 
     reg_val = 0
 
@@ -72,10 +73,9 @@ def reg3DFFT(hi_img, pred_img):
 
         fft_vals = flat_fft[0:int(N/2)] * tf.cast(k_vals[0:int(N/2)], dtype=tf.complex64)
         
-        # reg_val += tf.contrib.distributions.percentile(tf.math.abs(fft_vals), q=95, axis=None)
         reg_val += tf.reduce_mean(tf.math.abs(fft_vals), axis=None)
 
-    return reg_val
+    return reg_val / N
 
 
 def regLaplace(hi_img, pred_img):
