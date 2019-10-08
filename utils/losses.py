@@ -79,7 +79,6 @@ def reg3DFFT(hi_img, pred_img):
 
 
 def regLaplace(hi_img, pred_img):
-    dims = pred_img.get_shape().as_list()
     lap_filt_1 = np.array([[0, 0, 0], [0, 1, 0], [0, 0, 0]])
     lap_filt_2 = np.array([[0, 1, 0], [1, -6, 1], [0, 1, 0]])
     lap_filt_3 = np.array([[0, 0, 0], [0, 1, 0], [0, 0, 0]])
@@ -94,6 +93,6 @@ def regLaplace(hi_img, pred_img):
     filt_vols = tf.square(filt_vols)
 #     reg_val = tf.reduce_sum(tf.contrib.distributions.percentile(
 #             filt_vols, q=95, axis=[1, 2, 3, 4]))
-    reg_val = tf.reduce_sum(filt_vols)
+    reg_val = tf.reduce_mean(filt_vols)
 
     return reg_val

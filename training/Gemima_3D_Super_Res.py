@@ -31,6 +31,7 @@ parser.add_argument('--folds', '-f', help="Number of cross-validation folds", ty
 parser.add_argument('--crossval', '-c', help="Fold number", type=int, nargs='?', const=0, default=0)
 parser.add_argument('--gpu', '-g', help="GPU number", type=int, nargs='?', const=0, default=0)
 parser.add_argument('--eta', '-e', help="Learning rate", type=float, nargs='?', const=0.001, default=0.001)
+parser.add_argument('--fft3d', '-fd', help="3D or 1D FFT", type=str, nargs='?', const='3d', default='3d')
 parser.add_argument('--lamb', '-l', help="Regularisation hyperparameter", type=float, nargs='?', const=0.0, default=0.0)
 arguments = parser.parse_args()
 
@@ -87,6 +88,7 @@ else:
     LOG_SAVE_NAME = FILE_STEM + "reports/" + expt_name
 
 ETA = arguments.eta
+
 hi_vol_dims = [size_mb, image_res, image_res, 12, 1]
 lo_vol_dims = [size_mb, image_res, image_res, 12, 1]
 
@@ -118,12 +120,13 @@ else:
     N_train = len(train_indices)
     N_val = len(val_indices)
 
-# NB, parameters are standard deviations
+# NB, rot parameters are mean and  standard deviations
+# Scale parameter is +/- 1
 if arguments.data_aug:
     aug_dict = {
         'flip': None,
-        'rot': 41,
-        'scale': 0.17,
+        'rot': 24,
+        'scale': 0.25,
         'shear': None
     }
     
@@ -138,7 +141,14 @@ with tf.device('/device:GPU:{}'.format(gpu_number)):
     pred_images = SRNet.output
     L2 = lossL2(ground_truth, pred_images)
     # reg_term = regLaplace(ground_truth, pred_images)
-    reg_term = reg3DFFT(ground_truth, pred_images)
+
+    if arguments.fft3d == '3d':
+        reg_term = reg3DFFT(ground_truth, pred_images)
+    elif arguments.fft3d == '1d':
+        reg_term = regFFT(ground_truth, pred_images)
+    else:
+        raise ValueError("Invalid regularisation term")
+
     total_loss = L2 + (LAMBDA * reg_term)
     train_op = tf.train.AdamOptimizer(learning_rate=ETA).minimize(total_loss)
 
@@ -151,6 +161,8 @@ if num_folds != 0:
     print("_cv{}".format(fold))
 else:
     log_file.write("\n")
+
+log_file.write("FFT: " + arguments.fft3d + "\n")
 
 if arguments.data_aug:
     log_file.write("AUGMENTED\n")
