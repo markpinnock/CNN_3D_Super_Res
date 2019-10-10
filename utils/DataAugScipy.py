@@ -28,18 +28,18 @@ class DataAugmentationScipy:
         
         return flip_mat
     
-    def rotMat(self, theta):
+    def rotMat(self, theta_in):
         for _ in range(10):
-            theta = np.random.normal(0, theta)
+            theta_out = np.random.normal(0, theta_in)
 
-            if abs(theta) < 90:
+            if abs(theta_out) < 90:
                 break
         
-        theta = theta / 180 * np.pi
+        theta_out = theta_out / 180 * np.pi
     
         rot_mat = np.array(
-        [[np.cos(theta), -np.sin(theta)],
-         [np.sin(theta), np.cos(theta)]]
+        [[np.cos(theta_out), -np.sin(theta_out)],
+         [np.sin(theta_out), np.cos(theta_out)]]
          )
 
         return rot_mat

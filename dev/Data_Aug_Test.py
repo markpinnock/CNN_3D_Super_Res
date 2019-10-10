@@ -29,7 +29,8 @@ hi_vol, lo_vol = imgLoader(hi_list, lo_list, [0, 1, 2, 3])
 DataAug = DataAugmentationScipy([4, 128, 128, 12, 1])
 
 new_hi_vol, new_lo_vol = DataAug.warpImg(
-    hi_vol, lo_vol, flip=None, rot=None, scale=0, shear=None)
+    hi_vol, lo_vol, flip=None, rot=24, scale=0.25, shear=None)
+
 # new_hi_vol, new_lo_vol = DataAug.transform(hi_vol, lo_vol)
 
 for i in range(1):

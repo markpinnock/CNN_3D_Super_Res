@@ -192,8 +192,8 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
                 
                 if arguments.data_aug:
                     hi_mb, lo_mb = DataAug.warpImg(
-                        hi_mb, lo_mb, aug_dict['flip'], aug_dict['rot'],
-                        aug_dict['scale'], aug_dict['shear'])
+                        hi_mb, lo_mb, flip=aug_dict['flip'], rot=aug_dict['rot'],
+                        scale=aug_dict['scale'], shear=aug_dict['shear'])
 
                 train_feed = {ph_hi: hi_mb, ph_lo: lo_mb}
                 sess.run(train_op, feed_dict=train_feed)
